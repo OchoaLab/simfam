@@ -1,4 +1,33 @@
-# make a `fam` pruner that eliminates individuals that are not ancestors of a certain focal population
+#' Remove non-ancestors of a set of individuals from pedigree
+#'
+#' This function accepts an input pedigree and a list of individuals of interest, and returns the subset of the pedigree including only the individuals of interest and their direct ancestors.
+#' This is useful in simulations, to avoid modeling/drawing genotypes of individuals without descendants in the last generation.
+#'
+#' @param fam The pedigree data.frame, in plink FAM format.
+#' Only columns `id`, `pat`, and `mat` are required.
+#' Founders must be present, and their `pat` and `mat` values must be 0 (missing).
+#' Non-founders must have both their parents be non-0.
+#' Parents must appear earlier than their children in the table.
+#' @param ids The list of individuals of interest, whose ancestors we want to keep.
+#' All must be present in `fam$id`.
+#' 
+#' @return The filtered FAM table with non-ancestors of `ids` excluded.
+#'
+#' @examples
+#' # construct a family with three founders, but one "bob" has no descendants
+#' library(tibble)
+#' fam <- tibble(
+#'     id  = c('mom', 'dad', 'bob', 'child'),
+#'     pat = c(    0,     0,     0,   'dad'),
+#'     mat = c(    0,     0,     0,   'mom')
+#' )
+#' # only want 'child' and its ancestors
+#' ids <- 'child'
+#' fam2 <- prune_fam( fam, ids )
+#' # the filtered pedigree has "bob" removed:
+#' fam2
+#' 
+#' @export
 prune_fam <- function( fam, ids ) {
     if ( missing( fam ) )
         stop( '`fam` is required!' )

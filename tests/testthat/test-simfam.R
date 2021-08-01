@@ -63,7 +63,7 @@ test_that( "draw_couples_nearest works", {
     # unfortunately, though the pairings are unique, there are two column permutations in which they can appear in output
     # NOTE: sex means fathers (first row) can only be individuals 1 and 4
     parents_exp = cbind( c(1,3), c(4,2) )
-    expect_true( parents == parents_exp || parents == parents_exp[, 2:1 ] )
+    expect_true( all( parents == parents_exp ) || all( parents == parents_exp[, 2:1 ] ) )
     # verify parent sexes
     expect_true( all( sex[ parents[ 1, ] ] == 1 ) )
     expect_true( all( sex[ parents[ 2, ] ] == 2 ) )
@@ -358,13 +358,13 @@ test_that( "sim_pedigree works", {
 
     # cause errors on purpose
     expect_error( sim_pedigree() )
+    expect_error( sim_pedigree( n = n ) ) # fails because n is scalar only
     expect_error( sim_pedigree( G = G ) )
-    expect_error( sim_pedigree( n = n ) )
 
     # a minimal, successful run
     # NOTE: had to set sex of founders to be exactly half male/female because otherwise they are set randomly, and there is a good chance (for small `n`) that they are all the same sex, in which case there's no solution!
     expect_silent(
-        data <- sim_pedigree( G, n, sex = rep_len( c(1L, 2L), n ), verbose = FALSE )
+        data <- sim_pedigree( n, G, sex = rep_len( c(1L, 2L), n ) )
     )
     expect_true( is.list( data ) )
     expect_equal( names( data ), c('fam', 'kinship_local') )
@@ -392,12 +392,12 @@ test_that( "sim_pedigree works", {
     n <- c(16, 19, 21)
 
     # another type of error if G and n are mismatched in dimensions
-    expect_error( sim_pedigree( G, n[1:2], verbose = FALSE ) )
+    expect_error( sim_pedigree( n[1:2], G ) )
 
     # and now the proper run
     # again set sex to ensure at least one pair in first generation
     expect_silent(
-        data <- sim_pedigree( G, n, sex = rep_len( c(1L, 2L), n[1] ), verbose = FALSE, full = TRUE )
+        data <- sim_pedigree( n, sex = rep_len( c(1L, 2L), n[1] ), full = TRUE )
     )
     expect_true( is.list( data ) )
     expect_equal( names( data ), c('fam', 'kinship_local') )
@@ -479,7 +479,7 @@ test_that( "draw_geno_fam works", {
     # and FAM table
     # NOTE: had to set sex of founders to be exactly half male/female because otherwise they are set randomly, and there is a good chance (for small `n`) that they are all the same sex, in which case there's no solution!
     expect_silent(
-        data <- sim_pedigree( G, n, sex = rep_len( c(1L, 2L), n[1] ), verbose = FALSE )
+        data <- sim_pedigree( n, sex = rep_len( c(1L, 2L), n[1] ) )
     )
     # extract table including both generations
     fam <- data$fam

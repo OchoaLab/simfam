@@ -16,7 +16,7 @@ draw_geno_child <- function( X ) {
     X <- X / 2
     
     # draw each haplotype properly first (from each parent, ignoring the other), then combine
-    x <- rbinom( m_loci, 1, X[, 1] ) + rbinom( m_loci, 1, X[, 2] )
+    x <- stats::rbinom( m_loci, 1, X[, 1] ) + stats::rbinom( m_loci, 1, X[, 2] )
     # this is the final genotype of the child
     return( x )
 }

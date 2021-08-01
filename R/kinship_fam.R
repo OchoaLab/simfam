@@ -1,5 +1,57 @@
-# output agrees with [kinship2::kinship()] when founders are unrelated (`kinship = diag(n)/2` for the right number of founders and column/row names matching the founders in `fam`).
-# This function is more general since it allows founders to be related in arbitrary ways
+#' Calculate kinship matrix of a pedigree with structured founders
+#'
+#' Calculates a full kinship matrix (between all individuals in the provided pedigree FAM table) taking into account the relatedness of the founders as provided.
+#' Output agrees with [kinship2::kinship()] but only when founders are unrelated/outbred (in other words, that function does not allow relatedness between founders).
+#'
+#' @param kinship The kinship matrix of the founders.
+#' This matrix must have column and row names that identify each founder (matching codes in `fam$id`).
+#' Individuals may be in a different order than `fam$id`.
+#' Extra individuals in `kinship` but absent in `fam$id` will be silently ignored.
+#' A traditional pedigree calculation would use `kinship = diag(n)/2` (plus appropriate column/row names), where `n` is the number of founders, to model unrelated and outbred founders.
+#' However, if `kinship` measures the population kinship estimates between founders, the output is also a population kinship matrix (which combines the structural/ancestral and local/pedigree relatedness values into one).
+#' @param fam The pedigree data.frame, in plink FAM format.
+#' Only columns `id`, `pat`, and `mat` are required.
+#' Founders must be present, and their `pat` and `mat` values must be 0 (missing).
+#' Non-founders must have both their parents be non-0.
+#' Parents must appear earlier than their children in the table.
+#'
+#' @return The kinship matrix of the entire `fam` table, taking the relatedness of the founders into account.
+#' The rows and columns of this kinship matrix correspond to `fam$id` in that order.
+#'
+#' @examples
+#' # The smallest pedigree, two parents and a child.
+#' # A minimal fam table with the three required columns.
+#' # Note "mother" and "father" have missing parent IDs (0), while "child" does not
+#' library(tibble)
+#' fam <- tibble(
+#'   id = c('father', 'mother', 'child'),
+#'   pat = c(0, 0, 'father'),
+#'   mat = c(0, 0, 'mother')
+#' )
+#' 
+#' # Kinship of the parents, here two unrelated/outbred individuals:
+#' kinship <- diag(2)/2
+#' # Name the parents with same codes as in `fam`
+#' # (order can be different)
+#' colnames( kinship ) <- c('mother', 'father')
+#' rownames( kinship ) <- c('mother', 'father')
+#' # For a clearer example, make the father slightly inbred
+#' # (a self-kinship value that exceeds 1/2):
+#' kinship[2,2] <- 0.6
+#'
+#' # Calculate the full kinship matrix
+#' kinship_all <- kinship_fam( kinship, fam )
+#' 
+#' # This is a 3x3 matrix with row/col names matching fam$id.
+#' # The parent submatrix equals the input (reordered),
+#' # but now there's relatedness to the child too
+#' kinship_all
+#' 
+#' @seealso
+#' Plink FAM format reference:
+#' <https://www.cog-genomics.org/plink/1.9/formats#fam>
+#'
+#' @export
 kinship_fam <- function(kinship, fam) {
     if ( missing( kinship ) )
         stop( '`kinship` is required!' )

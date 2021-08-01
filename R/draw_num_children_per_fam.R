@@ -21,7 +21,7 @@ draw_num_children_per_fam <- function( n_fam, pop_size, children_min = 1L ) {
     # draw from Poisson
     # since Poisson produces zeroes, which are very unproductive in our case, let's allow forcing a minimum number in all cases, and take that away from the mean
     # NOTE: these are integers because `rpois` returns integers and `children_min` was coerced into int
-    children_per_fam <- children_min + rpois( n_fam, avg_children_per_fam - children_min )
+    children_per_fam <- children_min + stats::rpois( n_fam, avg_children_per_fam - children_min )
     
     # this count may be off from target by small amounts
     # fix counts iteratively respecting minimum fam sizes
