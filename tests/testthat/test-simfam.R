@@ -343,7 +343,7 @@ validate_fam <- function( fam, n, G ) {
     # need a loop to build vector
     ids_exp <- NULL
     for ( g in 1 : G ) {
-        ids_exp <- c( ids_exp, paste0( 'g', g, '-', 1 : n[g] ) )
+        ids_exp <- c( ids_exp, paste0( g, '-', 1 : n[g] ) )
     }
     expect_equal( fam$id, ids_exp )
     # check that everybody's parents are the sex the should be
@@ -371,7 +371,7 @@ test_that( "sim_pedigree works", {
     # check fam
     validate_fam( data$fam, n, G )
     # check kinship_local
-    names_kinship_exp <- paste0( 'g', G, '-', 1 : n )
+    names_kinship_exp <- paste0( G, '-', 1 : n )
     validate_kinship_proper( data$kinship_local, names_kinship_exp )
 
     # it'd be nice to compare kinship calculated by `kinship2` package!
@@ -408,7 +408,7 @@ test_that( "sim_pedigree works", {
     expect_true( is.list( data$kinship_local ) )
     expect_equal( length( data$kinship_local ), G )
     for ( g in 1 : G ) {
-        names_kinship_exp <- paste0( 'g', g, '-', 1 : n[g] )
+        names_kinship_exp <- paste0( g, '-', 1 : n[g] )
         validate_kinship_proper( data$kinship_local[[g]], names_kinship_exp )
     }
     # compare to `kinship2` package again!

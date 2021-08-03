@@ -30,7 +30,7 @@
 #' @return A list with two named elements:
 #' - `fam`: the pedigree, a tibble in plink FAM format.  Following the column naming convention of the related `genio` package, it contains columns:
 #'   - `fam`: Family ID, trivial "fam1" for all individuals
-#'   - `id`: Individual ID, in this case a code of format (in regular expression) "g(\\d+)-(\\d+)" where the first integer is the generation number and the second integer is the index number (1 to `n[g]` for generation `g`).
+#'   - `id`: Individual ID, in this case a code of format (in regular expression) "(\\d+)-(\\d+)" where the first integer is the generation number and the second integer is the index number (1 to `n[g]` for generation `g`).
 #'   - `pat`: Paternal ID.  Matches an `id` except for founders, which have fathers set to 0.
 #'   - `mat`: Maternal ID.  Matches an `id` except for founders, which have mothers set to 0.
 #'   - `sex`: integers 1L (male) or 2L (female) which were drawn randomly; no other values occur in these outputs.
@@ -93,7 +93,7 @@ sim_pedigree <- function(
     fam <- tibble::tibble(
         fam = 'fam1', # place in desired order, but there aren't families really
         # names of individuals in first generation (founders)
-        id = paste0( 'g1-', 1 : n[1] ),
+        id = paste0( '1-', 1 : n[1] ),
         pat = 0,
         mat = 0,
         sex = sex,
@@ -135,11 +135,11 @@ sim_pedigree <- function(
         fam_g <- tibble::tibble(
             fam = 'fam1',
             # names of individuals in current generation (children)
-            id = paste0( 'g', g, '-', 1 : n[g] ),
+            id = paste0( g, '-', 1 : n[g] ),
             # expand parents * children_per_fam to make FAM pat/mat vectors
             # NOTE: generation of parents is `g-1` (previous of current)!
-            pat = paste0( 'g', g-1, '-', rep.int( parents[ 1, ], children_per_fam ) ),
-            mat = paste0( 'g', g-1, '-', rep.int( parents[ 2, ], children_per_fam ) ),
+            pat = paste0( g-1, '-', rep.int( parents[ 1, ], children_per_fam ) ),
+            mat = paste0( g-1, '-', rep.int( parents[ 2, ], children_per_fam ) ),
             # draw sex
             sex = draw_sex( n[g] ),
             pheno = 0

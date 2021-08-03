@@ -11,3 +11,8 @@
 - Documented (Roxygen2) and exported main functions: `sim_pedigree`, `kinship_fam`, `admix_fam`, `draw_geno_fam`, `draw_sex`, `prune_fam`.
 - Function `sim_pedigree`: made `n` first and only mandatory argument (used to be second), now `G` is second (used to be first) and defaults to `G = length(n)`.
 - Fixed import namespaces, other minor changes to pass R CMD check.
+
+# simfam 0.0.2.9000 (2021-08-03)
+
+- Function `sim_pedigree` now assigns IDs without `g` prefix (format is just `\d+-\d+` with two integers denoting generation and index, separated by a dash).
+
