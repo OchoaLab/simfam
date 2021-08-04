@@ -1,0 +1,514 @@
+---
+title: "`simfam`: simulate and model family pedigrees with structured founders"
+author: "Alejandro Ochoa"
+date: "`r Sys.Date()`"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{`simfam`: simulate and model family pedigrees with structured founders}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+```{r, cache = FALSE, include = FALSE}
+## copied from examples from the "simmer" R package
+## after: https://www.enchufa2.es/archives/suggests-and-vignettes.html
+## by Iñaki Úcar
+required <- c("bnpsd", "popkin", "kinship2", "RColorBrewer")
+
+if (!all(sapply(required, requireNamespace, quietly = TRUE)))
+  knitr::opts_chunk$set(eval = FALSE)
+```
+
+# Introduction
+
+The `simfam` package is for constructing large random families---with population studies in mind---with realistic constraints including avoidance of close relative pairings but otherwise biased for closest pairs in a 1-dimensional geography.
+There is also code to draw genotypes across the pedigree starting from genotypes for the founders.
+Our model allows for the founders to be related or structured---which arises in practice when there are different ancestries among founders---and given known parameters for these founders (including known kinship matrices and ancestry proportions) we provide code to calculate the true kinship and expected admixture proportions of all descendants.
+
+This vignette focuses on two examples.
+One is small, necessary to actually visualize the pedigree.
+The second is larger, where the pedigree cannot be fully visualized but whose population parameters are more realistic.
+This vignette draws from other general packages to visualize the data (`popkin` and `kinship2`), as well as to construct/simulate structured founders (`bnpsd`, which is based on the admixture model).
+
+# Small example
+
+## Construct random pedigree
+
+Let's start with a 3-generation pedigree with 15 individuals per generation.
+(The code can also handle variable numbers of individuals per generation, which is not demonstrated in this vignette for simplicity).
+
+```{r}
+library(simfam)
+
+# data dimensions
+n <- 15 # number of individuals per generation
+G <- 3 # number of generations
+
+# the result changes in every run unless we set the seed
+set.seed(1)
+
+# draw the random pedigree with those properties
+data <- sim_pedigree( n, G )
+# save two objects separately
+fam <- data$fam
+kinship_local_G <- data$kinship_local
+```
+The function returns a list with two objects.
+The first element in the list is the most important: `fam` is a table that describes the pedigree in a standard notation in genetics research: the [Plink FAM format](https://www.cog-genomics.org/plink/1.9/formats#fam).
+Every row corresponds to one individual, and columns name individuals (`id`), their parents (`pat` and `mat`, founders have parents set to `NA`), and their `sex` (`1`=male, `2`=female).
+The FAM table format also requires a family ID (`fam`) and a phenotype (`pheno`) column, both of which take on dummy values in the output of `sim_pedigree`:
+```{r}
+# the top of the table
+head( fam )
+
+# and the bottom
+tail( fam )
+```
+The IDs (columns `id`, `pat`, `mat`) are formatted as `g-i`, where the first number is the generation and the second number is an index within the generation (1 to `n`).
+Every individual belongs to a generation in the simulation (founders are the first generation), and only individuals in the same generation may be paired.
+Sex is drawn at random for each individual prior to pairing.
+Every individual has a unique index within the generation, that places them in a 1D geography---an important detail since pairings are strongly biased to be between closest individuals.
+Founders are ordered as they are constructed, and children are ordered according to the mean index of their parents.
+Pairings occur randomly and iteratively: while there are available male-female pairs, a male is drawn at random from the available males and he is paired with the closest unpaired female that is not a close relative (by default they must be less related than 2nd cousins, i.e. have a pedigree kinship coefficient of less than `1/4^3`).
+
+The second element in the return list of `sim_pedigree` is the local (i.e., pedigree-based) kinship matrix of the individuals.
+This data can be recalculated from the `fam` table alone, so it is redundant, but it is calculated because the pairing algorithm requires it to avoid close relatives, so it is returned mostly because it's there already.
+By default, only individuals in the last generation are included in the matrix that is returned, so this is a `n * n` (here 15 x 15) matrix:
+```{r}
+kinship_local_G
+```
+This kinship matrix is later visualized more conveniently as a heatmap using the `popkin` package.
+If you're interested, a list of local kinship matrices (one per generation) is returned in place of this if `sim_pedigree` is called with the `full = TRUE` option.
+
+## Visualizing the pedigree
+
+We use the excellent `kinship2` package to visualize our randomly-constructed pedigree:
+```{r, fig.width = 7, fig.height = 4, fig.align = 'center'}
+# load the package
+library(kinship2)
+
+# Convert the `fam` table into a `pedigree` object required by the `kinship2` package.
+obj <- pedigree(
+    id = fam$id,
+    dadid = fam$pat,
+    momid = fam$mat,
+    sex = fam$sex,
+    affected = fam$pheno
+)
+
+# plot the pedigree
+plot( obj, cex = 0.7 )
+```
+In these kinds of pedigree plots, node shapes represent sex (box=male, circle=female), and the dashed curved lines (if any) represent individuals copied in two places (once next to its parents, the second time next to its mate) to simplify the plot (the two nodes connected by a dashed line have the same individual ID).
+It is immediate clear that only individuals with opposite sex were paired, and no close relatives were paired (i.e. no siblings or first or second cousins).
+
+You will notice several things from this random pedigree.
+One is that some individuals do not get paired in each generation, which happens because there are too many constraints: the number of males and females is random so they may be unequal, and close-relative avoidance further limits pairings.
+However, this problem is exacerbated in this toy example because the population is small; in a large population most people are paired (see further below).
+Here, founders that weren't paired are not plotted (see message below figure).
+Pairings are always between people of the same generation (first number in ID), and usually but not always between people with close indexes (second number in ID).
+
+When there are pairings, `sim_pedigree` enforces a minimum number of children per family (default 1).
+Each generation has exactly the desired number of total individuals (15 per generation in this example), which is achieved by randomly drawing family sizes from a modified Poisson distribution (the number of children in excess of the minimum is drawn from Poisson with target mean per family minus minimum size) followed by smaller random adjustments in the direction of the discrepancy until the target population size is met.
+
+## Pruning individuals without descendants
+
+If we are only interested in the last generation, then individuals from previous generations that were unpaired are irrelevant, since for example they don't determine the genotypes of the last generation.
+So for simplicity or efficiency, we may want to remove those individuals without descendants.
+We do this with the function `prune_fam`!
+```{r, fig.width = 7, fig.height = 4, fig.align = 'center'}
+# first create list of IDs of interest
+# (last generation in this example)
+ids_G <- paste0( G, '-', 1:n )
+# replace original with pruned FAM table
+fam <- prune_fam( fam, ids_G )
+# inspect
+fam
+# and plot pedigree
+obj <- pedigree(
+    id = fam$id,
+    dadid = fam$pat,
+    momid = fam$mat,
+    sex = fam$sex,
+    affected = fam$pheno
+)
+plot( obj, cex = 0.7 )
+```
+Inspection of the top of the table shows that founders that were originally unpaired are now removed (the plot also doesn't report "unplotted" people).
+The plot further shows that many individuals in the 2nd generation (childness uncles and aunts of the last generation) were also removed, but nobody in the 3rd generation was removed (as desired).
+
+## Drawing genotype data: unstructured founders
+
+We will draw genotypes in two ways to reflect the traditional (unrelated founders) and the intended use of `simfam`: structured founders.
+Let's do unrelated founders first.
+Note that, to keep this vignette runtime low, the number of loci is much lower than any real dataset, so data will look artificially noisier here.
+
+```{r}
+# number of loci to draw
+m <- 5000
+# draw uniform ancestral allele frequencies
+p_anc <- runif( m )
+# draw independent (unstructured) genotypes for founders (includes founders without descendants)
+X_1 <- matrix(
+    rbinom( n * m, 2, p_anc ),
+    nrow = m,
+    ncol = n
+)
+# `simfam` requires names for the founders on `X_1`, to validate identities and align
+ids_1 <- paste0( '1-', 1:n ) # match `fam` table's IDs
+colnames( X_1 ) <- ids_1
+```
+
+Before moving on, it's important to understand that these founders have a kinship matrix, albeit a trivial one, with zero kinship (unrelated) between individuals and a self-kinship of 1/2 (expected for outbred individuals).
+We can verify this directly using a kinship estimator applied to the genotypes we just drew.
+We use `popkin`, which is the only unbiased kinship estimator.
+`popkin` also provides heatmap visualization of kinship matrices via `plot_popkin`.
+
+```{r, fig.width = 7, fig.height = 3.4, fig.align = 'center'}
+library(popkin)
+# estimate kinship
+kinship_est_1 <- popkin( X_1 )
+# true/expected kinship
+kinship_1 <- diag( n ) / 2
+# assign same IDs as `X_1` and `fam`; `simfam` generally requires these to validate/align
+colnames( kinship_1 ) <- colnames( X_1 )
+rownames( kinship_1 ) <- colnames( X_1 )
+# plot them together for comparison
+plot_popkin(
+    list( kinship_1, kinship_est_1 ),
+    titles = c('Expected', 'Estimated'),
+    names = TRUE,
+    leg_width = 0.2,
+    mar = c(3, 2)
+)
+```
+
+Now we draw genotypes across the pedigree using `draw_geno_fam`!
+Since we have genotypes of the founders, we can simulate the random inheritance of alleles to every descendant, which produces the correct pedigree-based kinship/covariance structure at every locus.
+However, this code draws loci independently from each other (there's no LD).
+We also construct the total expected kinship across this pedigree with a similar function, `kinship_fam`.
+```{r}
+X <- draw_geno_fam( X_1, fam )
+# expected kinship of entire pruned pedigree, starting from true kinship of founders.
+# Called "local" kinship because it ignores the ancestral population structure (will be reused)
+# NOTE: agrees with `kinship2::kinship( fam )`, but only because founders are unstructured
+kinship_local <- kinship_fam( kinship_1, fam )
+```
+We can view and validate the resulting data in several ways.
+The more complete validation is to estimate kinship for all `X` (all 3 generations) and see that it agrees with `kinship_fam`:
+```{r, fig.width = 7, fig.height = 3.4, fig.align = 'center'}
+# estimate kinship
+kinship_local_est <- popkin( X )
+# plot them together for comparison
+plot_popkin(
+    list( kinship_local, kinship_local_est ),
+    titles = c('Expected', 'Estimated'),
+    names = TRUE,
+    names_cex = 0.8,
+    leg_width = 0.2,
+    mar = c(3, 2)
+)
+```
+Above you can see that only founders in the pruned FAM table were kept in the output.
+However, in a real dataset previous generations might not be available (especially if `G` were much larger than 3), so we might only have the genotype data of a subset of more recent relatives.
+Here we subset to keep the last generation, and compare not only to `kinship_fam`, but also to the original `kinship_local_G` that was calculated by `sim_pedigree` to avoid pairing close relatives.
+```{r, fig.width = 7, fig.height = 2.3, fig.align = 'center'}
+# indexes (really logicals) marking individuals in last generation,
+# to subset data (which is aligned with `fam`)
+indexes_G <- fam$id %in% ids_G
+# estimate kinship
+kinship_local_est <- popkin( X )
+# plot them together for comparison
+plot_popkin(
+    list(
+        kinship_local[ indexes_G, indexes_G ],
+        kinship_local_est[ indexes_G, indexes_G ],
+        kinship_local_G
+    ),
+    titles = c('Expected', 'Estimated', 'Local'),
+    names = TRUE,
+    mar = c(3, 2)
+)
+```
+
+## Drawing genotype data: admixed founders
+
+Now we simulate data from the much more interesting case, where founders have differing mixed ancestries!
+This is much more like real human data.
+For this we use another external package, `bnpsd`, to construct the admixture parameters of the founders, which also includes calculating their true population kinship matrix.
+```{r}
+library(bnpsd)
+# additional admixture parameters:
+# number of intermediate subpopulations
+K <- 3
+# define population structure
+# FST values for k=3 subpopulations
+inbr_subpops <- c(0.2, 0.4, 0.6)
+# admixture proportions from 1D geography (founders)
+admix_proportions_1 <- admix_prop_1d_linear( n, K, sigma = 1 )
+# add founder names to `admix_proportions_1` (will propagate to other vars of interest)
+rownames( admix_proportions_1 ) <- paste0( '1-', 1:n ) # match `fam` table's IDs
+# also name subpopulations simply as S1, S2, S3
+colnames( admix_proportions_1 ) <- paste0( 'S', 1:K )
+
+# calculate true kinship matrix of the admixed founders
+# NOTE: overwrites `kinship` for unstructured founders
+kinship_1 <- coanc_to_kinship( coanc_admix( admix_proportions_1, inbr_subpops ) )
+
+# draw genotypes from admixture model
+# NOTE: overwrites `X_1` for unstructured founders
+X_1 <- draw_all_admix( admix_proportions_1, inbr_subpops, m )$X
+```
+
+We can again verify the population kinship of the founders, which is no longer full of zeroes but rather takes on continuous values that depend on the admixture proportions of each pair of founders:
+```{r, fig.width = 7, fig.height = 3.4, fig.align = 'center'}
+# estimate kinship (NOTE: overwrites `kinship_est_1` for unstructured founders)
+kinship_est_1 <- popkin( X_1 )
+# plot them together for comparison
+plot_popkin(
+    list( kinship_1, kinship_est_1 ),
+    titles = c('Expected', 'Estimated'),
+    names = TRUE,
+    leg_width = 0.2,
+    mar = c(3, 2)
+)
+```
+Note that, unlike the corresponding demonstration in the `bnpsd` package, here the diagonal plots self-kinship values instead of inbreeding coefficients, as kinship matrices are the central focus of this `simfam` package.
+
+We draw genotypes across the pedigree the same way as before:
+```{r}
+X <- draw_geno_fam( X_1, fam )
+# expected kinship of entire pruned pedigree, starting from true kinship of founders
+# NOTE: DOESN'T agree with `kinship2::kinship( fam )` anymore because founders are structured!
+kinship_total <- kinship_fam( kinship_1, fam )
+```
+We again compare the expected kinship matrix to the estimate from genotypes:
+```{r, fig.width = 7, fig.height = 3.4, fig.align = 'center'}
+# estimate kinship
+kinship_total_est <- popkin( X )
+# plot them together for comparison
+plot_popkin(
+    list( kinship_total, kinship_total_est ),
+    titles = c('Expected', 'Estimated'),
+    names = TRUE,
+    names_cex = 0.8,
+    leg_width = 0.2,
+    mar = c(3, 2)
+)
+```
+
+Lastly, we again subset individuals in the last generation only and compare their *total* to their *local* kinship, which are related but different things when a population is structured.
+Although undoubtedly the *total* kinship (panels A-B below) capture much of the same correlation patterns as the *local* kinship (panel C), the total kinship captures additional covariance due to the structure of the founders that the local kinship ignores (the local kinship uses only the pedigree information and ignores the ancestry differences of the founders).
+```{r, fig.width = 7, fig.height = 2.3, fig.align = 'center'}
+plot_popkin(
+    list(
+        kinship_total[ indexes_G, indexes_G ],
+        kinship_total_est[ indexes_G, indexes_G ],
+        kinship_local_G
+    ),
+    titles = c('Total Expected', 'Total Estimated', 'Local'),
+    names = TRUE,
+    mar = c(3, 2)
+)
+```
+
+## Admixture proportions in the pedigree
+
+In this admixture model the structure comes from fractional shared ancestry due to admixture as well as the relatedness between ancestries.
+We can look at these relatedness components in isolation from the pedigree and see that their contribution to the total kinship matrix is nearly additive (will explain more precisely shortly)!
+First propagate the admixture proportions across the pedigree, under the simple model that the ancestry of a child is the average of the ancestry of its parents:
+```{r, fig.width = 7, fig.height = 2.5, fig.align = 'center'}
+# admixture proportions of pruned family
+admix_proportions <- admix_fam( admix_proportions_1, fam )
+
+# visualize as bar plot
+
+# for nice colors
+library(RColorBrewer)
+# colors for independent subpopulations
+col_subpops <- brewer.pal( K, "Paired" )
+# shrink default margins
+par(mar = c(4, 4, 0.5, 0) + 0.2)
+barplot(
+    t( admix_proportions ),
+    col = col_subpops,
+    legend.text = TRUE,
+    args.legend = list( cex = 0.7, bty = 'n' ),
+    border = NA,
+    space = 0,
+    ylab = 'Admixture prop.',
+    las = 2
+)
+mtext('Individuals', side = 1, line = 3)
+```
+The above figure shows that admixture proportions in the first generation vary a lot: for example, 1-1 has a large proportion of S1 ancestry, while 1-14 has mostly S3 instead.
+In contrast, in the 3rd generation ancestry is much more averaged out, with fewer extremes.
+This effect will be weaker in larger populations, an example we go into shortly.
+
+This code calculates the kinship expected from the admixture structure only, which will be visualized shortly.
+```{r}
+# this is the admixture-only relatedness
+kinship_admix <- coanc_to_kinship( coanc_admix( admix_proportions, inbr_subpops ) )
+```
+
+## Total kinship partitioned into structural and family components
+
+We also demonstrate a good approximation of the total kinship that treats the structural (here admixture) and pedigree relatedness (in this case treating founders as unstructured) as independent effects, which roughly says that the kinship components satisfy (pseudocode): 
+```
+# These quantities are independent
+(1 - total) = (1 - struct) * (1 - family).
+# solved for total, reveals near additivity:
+total = struct + family - struct * family.
+```
+So when both the structural and family kinship values are much smaller than 1, their sum is a good match of the total kinship.
+Only when these values approach 1 does it become necessary to subtract their product, which is necessary since all of these values are probabilities and the total kinship cannot exceed 1.
+The same applies to inbreeding coefficient, but if we start from kinship matrices we need to transform the diagonal values back and forth (since, in pseudocode, `kinship[i,i] = ( 1 + inbreeding[i] ) / 2`).
+We plot all of the matrices and verify that the approximation is very good, so the conceptual partitioning into structural and family effects is justified:
+```{r, fig.width = 7, fig.height = 6.8, fig.align = 'center'}
+# this is the approximation of the total kinship:
+# NOTE: a bit complicated because diagonal has to be transformed.
+# Approximation operates on inbreeding coefficients, not self-kinship,
+# so `popkin::inbr_diag` converts self-kinship to inbreeding,
+# `bnpsd::coanc_to_kinship` converts inbreeding back to self-kinship.
+# Off-diagonal values are unmodified by both functions.
+kinship_total_approx <- coanc_to_kinship(
+    inbr_diag( kinship_local ) +
+    inbr_diag( kinship_admix ) -
+    inbr_diag( kinship_admix ) * inbr_diag( kinship_local )
+)
+
+# plot all model kinship matrices (no estimates from genotypes this time)
+plot_popkin(
+    list( kinship_admix, kinship_local, kinship_total, kinship_total_approx ),
+    titles = c('Admixture only', 'Family only', 'Total', 'Total approx.'),
+    names = TRUE,
+    names_cex = 0.8,
+    leg_width = 0.2,
+    layout_rows = 2,
+    mar = c(3, 2)
+)
+```
+
+# Large example
+
+Here we will simulate a much larger population size and a pedigree with a larger number of generations, to produce data that may better resemble real human data.
+We will make no attempt of visualize pedigrees or show individual labels.
+The whole code, redundant with our earlier analysis, is presented with minor explanations:
+
+```{r}
+library(simfam)
+
+# data dimensions
+n <- 500 # number of individuals per generation
+G <- 10 # number of generations
+K <- 3 # number of intermediate subpopulations
+m <- 5000 # number of loci
+
+# draw the random pedigree with those properties.
+data <- sim_pedigree( n, G )
+fam <- data$fam
+# use this local kinship calculation in plot
+kinship_local_G <- data$kinship_local
+
+# useful IDs from first (founders) and last generations
+ids_1 <- paste0( 1, '-', 1:n )
+ids_G <- paste0( G, '-', 1:n )
+
+# prune pedigree to speed up simulations/etc
+fam <- prune_fam( fam, ids_G )
+# indexes (really logicals) marking individuals in last generation,
+# to subset data (aligned with `fam`)
+indexes_G <- fam$id %in% ids_G
+
+### admixture model
+
+# define population structure
+# FST values for k=3 subpopulations
+inbr_subpops <- c(0.2, 0.4, 0.6)
+# admixture proportions from 1D geography (founders)
+admix_proportions_1 <- admix_prop_1d_linear( n, K, sigma = 1 )
+# add founder names to `admix_proportions_1` (will propagate to other vars of interest)
+rownames( admix_proportions_1 ) <- ids_1
+# also name subpopulations simply as S1, S2, S3
+colnames( admix_proportions_1 ) <- paste0( 'S', 1:K )
+
+# draw genotypes from admixture model
+# admixed founders
+X_1 <- draw_all_admix( admix_proportions_1, inbr_subpops, m )$X
+# propagate through pedigree
+X <- draw_geno_fam( X_1, fam )
+# subset last generation
+X_G <- X[ , indexes_G ]
+# total kinship estimated from genotypes
+kinship_total_G_est <- popkin( X_G )
+
+# calculate true total kinship matrix
+kinship_total_1 <- coanc_to_kinship( coanc_admix( admix_proportions_1, inbr_subpops ) )
+kinship_total <- kinship_fam( kinship_total_1, fam ) # all generations
+kinship_total_G <- kinship_total[ indexes_G, indexes_G ] # last generation only
+
+# kinship due to admixture only
+admix_proportions <- admix_fam( admix_proportions_1, fam ) # admix all generations
+kinship_admix <- coanc_to_kinship( coanc_admix( admix_proportions, inbr_subpops ) ) # all
+kinship_admix_G <- kinship_admix[ indexes_G, indexes_G ] # last generation only
+
+# total kinship approximation from components
+kinship_total_approx_G <- coanc_to_kinship(
+    inbr_diag( kinship_local_G ) +
+    inbr_diag( kinship_admix_G ) -
+    inbr_diag( kinship_admix_G ) * inbr_diag( kinship_local_G )
+)
+```
+
+The first important validation is that the total structure (estimated from genotypes) agrees with the theoretical calculations based on the pedigree and the known founder total kinship.
+For simplicity we visualize the last generation only:
+```{r, fig.width = 7, fig.height = 3.4, fig.align = 'center'}
+plot_popkin(
+    list( kinship_total_G, kinship_total_G_est ),
+    titles = c('Expected', 'Estimated'),
+    leg_width = 0.2,
+    mar = c(3, 2)
+)
+```
+
+The next demonstration is that the component partitioning approximation works again (limited to last generation):
+```{r, fig.width = 7, fig.height = 6.8, fig.align = 'center'}
+# plot all model kinship matrices (no estimates from genotypes this time)
+plot_popkin(
+    list( kinship_admix_G, kinship_local_G, kinship_total_G, kinship_total_approx_G ),
+    titles = c('Admixture only', 'Family only', 'Total', 'Total approx.'),
+    leg_width = 0.2,
+    layout_rows = 2,
+    mar = c(3, 2)
+)
+```
+
+Lastly, let's determine how many individuals in each generation were ancestors of individuals in the last generation.
+The bar plot below shows that, in this large simulation, most individuals in the first generation (founders), and in every subsequent generation, had descendants in the last generation.
+```{r, fig.width = 7, fig.height = 4, fig.align = 'center'}
+# the IDs in `fam` (the pruned FAM table) contain the individuals of interest
+ids <- fam$id
+frac_per_gen <- vector('numeric', G)
+for ( g in 1 : G ) {
+    # look for this pattern for this generation
+    pattern <- paste0( g, '-' )
+    # this is the desired fraction
+    frac_per_gen[g] <- sum( grepl( pattern, ids ) ) / n
+}
+# visualize as a barplot
+barplot(
+    frac_per_gen,
+    names.arg = 1 : G,
+    xlab = 'Generation',
+    ylab = 'Frac. individuals with descendants'
+)
+# add a line marking the maximum fraction of individuals per generation
+abline( h = 1, lty = 2, col = 'red' )
+```
