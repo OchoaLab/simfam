@@ -4,7 +4,7 @@
 \alias{draw_geno_fam}
 \title{Draw random genotypes on a pedigree with known founder genotypes}
 \usage{
-draw_geno_fam(X, fam)
+draw_geno_fam(X, fam, missing_vals = c("", 0))
 }
 \arguments{
 \item{X}{The genotype matrix of the founders (loci along rows, individuals along columns).
@@ -15,9 +15,14 @@ All values should be in \code{c(0L, 1L, 2L)}; for speed, this code does not chec
 
 \item{fam}{The pedigree data.frame, in plink FAM format.
 Only columns \code{id}, \code{pat}, and \code{mat} are required.
-Founders must be present, and their \code{pat} and \code{mat} values must be 0 (missing).
-Non-founders must have both their parents be non-0.
+\code{id} must be unique and non-missing.
+Founders must be present, and their \code{pat} and \code{mat} values must be missing (see below).
+Non-founders must have both their parents be non-missing.
 Parents must appear earlier than their children in the table.}
+
+\item{missing_vals}{The list of ID values treated as missing.
+\code{NA} is always treated as missing.
+By default, the empty string ('') and zero (0) are also treated as missing (remove values from here if this is a problem).}
 }
 \value{
 The random genotype matrix of the entire \code{fam} table, starting from the genotypes of the founders.
@@ -30,12 +35,12 @@ Constructs a random genotype matrix (for all individuals in the provided pedigre
 \examples{
 # The smallest pedigree, two parents and a child.
 # A minimal fam table with the three required columns.
-# Note "mother" and "father" have missing parent IDs (0), while "child" does not
+# Note "mother" and "father" have missing parent IDs, while "child" does not
 library(tibble)
 fam <- tibble(
   id = c('father', 'mother', 'child'),
-  pat = c(0, 0, 'father'),
-  mat = c(0, 0, 'mother')
+  pat = c(NA, NA, 'father'),
+  mat = c(NA, NA, 'mother')
 )
 
 # genotypes of the parents at 4 loci

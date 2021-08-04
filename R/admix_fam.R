@@ -9,9 +9,13 @@
 #' All values should be non-negative and each row of `admix` should sum to one; for speed, this code does not check that `admix` is valid, just averages data as-is.
 #' @param fam The pedigree data.frame, in plink FAM format.
 #' Only columns `id`, `pat`, and `mat` are required.
-#' Founders must be present, and their `pat` and `mat` values must be 0 (missing).
-#' Non-founders must have both their parents be non-0.
+#' `id` must be unique and non-missing.
+#' Founders must be present, and their `pat` and `mat` values must be missing (see below).
+#' Non-founders must have both their parents be non-missing.
 #' Parents must appear earlier than their children in the table.
+#' @param missing_vals The list of ID values treated as missing.
+#' `NA` is always treated as missing.
+#' By default, the empty string ('') and zero (0) are also treated as missing (remove values from here if this is a problem).
 #'
 #' @return The admixture proportions matrix of the entire `fam` table, based on the admixture of the founders.
 #' These are expectations, calculated for each individual as the average ancestry proportion of the parents.
@@ -21,12 +25,12 @@
 #' @examples
 #' # The smallest pedigree, two parents and a child.
 #' # A minimal fam table with the three required columns.
-#' # Note "mother" and "father" have missing parent IDs (0), while "child" does not
+#' # Note "mother" and "father" have missing parent IDs, while "child" does not
 #' library(tibble)
 #' fam <- tibble(
 #'   id = c('father', 'mother', 'child'),
-#'   pat = c(0, 0, 'father'),
-#'   mat = c(0, 0, 'mother')
+#'   pat = c(NA, NA, 'father'),
+#'   mat = c(NA, NA, 'mother')
 #' )
 #' 
 #' # admixture proportions of the parents
@@ -51,7 +55,7 @@
 #'
 #' @export
 # replaces old `update_admix_proportions_children` and `sim_children_generations_admix_proportions`
-admix_fam <- function(admix, fam) {
+admix_fam <- function( admix, fam, missing_vals = c('', 0) ) {
     if ( missing( admix ) )
         stop( '`admix` is required!' )
     if ( missing( fam ) )
@@ -61,7 +65,7 @@ admix_fam <- function(admix, fam) {
     
     # ensures that `admix` and `fam` agree, maps parent indexes
     # also loads of `fam` validations
-    data <- match_fam_founders( fam, rownames( admix ), 'admix', 'row' )
+    data <- match_fam_founders( fam, rownames( admix ), 'admix', 'row', missing_vals )
     fam <- data$fam # has new columns: founder, pati, mati
     indexes <- data$indexes # to reorder founders if needed
     

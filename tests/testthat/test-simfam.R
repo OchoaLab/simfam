@@ -121,12 +121,12 @@ test_that( "draw_num_children_per_fam works", {
     expect_true( min( children_per_fam ) >= children_min )
 })
 
-test_that( "match_fam_founders", {
+test_that( "match_fam_founders works", {
     # smallest toy example
     fam <- tibble(
         id = c('a', 'b', 'c'),
-        pat = c(0, 0, 'a'),
-        mat = c(0, 0, 'b')
+        pat = c(NA, NA, 'a'),
+        mat = c(NA, NA, 'b')
     )
     names_founders <- c('a', 'b')
     # start with case that works
@@ -184,8 +184,8 @@ test_that( "match_fam_founders", {
     # founders intermingled with non-founders
     fam <- tibble(
         id  = c('a', 'b', 'c', 'd', 'e', 'f'),
-        pat = c(  0,   0, 'a',   0,   0, 'e'),
-        mat = c(  0,   0, 'b',   0,   0, 'd')
+        pat = c( NA,  NA, 'a',  NA,  NA, 'e'),
+        mat = c( NA,  NA, 'b',  NA,  NA, 'd')
     )
     names_founders <- c('d', 'e', 'a', 'b')
     # expect to work
@@ -202,6 +202,24 @@ test_that( "match_fam_founders", {
     expect_equal( data$indexes, c(3, 4, 1, 2) )
     # ultimately we want this to be true
     expect_equal( fam2$id[ fam2$founder ], names_founders[ data$indexes ] )
+
+    # make sure there's no problems with empty `missing_vals` vector
+    expect_silent( 
+        data2 <- match_fam_founders( fam, names_founders, 'X', 'column', missing_vals = c() )
+    )
+    expect_equal( data, data2 ) # redundant check
+
+    # cause errors on purpose
+    fam$id[1] <- '' # tests check for missingness and for mapping to NAs
+    expect_error( match_fam_founders( fam, names_founders, 'X', 'column' ) )
+    fam$id[1] <- 'b' # set to a repeat value (though it also fails because "a" is completely missing, though that check happens later)
+    expect_error( match_fam_founders( fam, names_founders, 'X', 'column' ) )
+    fam$id[1] <- 'a' # set back to normal
+    names_founders[1] <- '' # now here
+    expect_error( match_fam_founders( fam, names_founders, 'X', 'column' ) )
+    names_founders[1] <- 'e' # set to a repeat value
+    expect_error( match_fam_founders( fam, names_founders, 'X', 'column' ) )
+    names_founders[1] <- 'd' # set back    
 })
 
 
@@ -218,10 +236,6 @@ validate_kinship_proper <- function( kinship, ids ) {
 
 # kinship calculated from FAM table using external package `kinship2`, for validation
 kin2 <- function( fam ) {
-    # need to massage data so kinship2 likes it
-    # need to transform missing parents into empty strings (zeroes only work when other IDs are numeric)
-    fam$pat[ fam$pat == 0 ] <- ''
-    fam$mat[ fam$mat == 0 ] <- ''
     # create the pedigree object
     pedigree <- kinship2::pedigree(
                               id = fam$id,
@@ -260,8 +274,8 @@ test_that( "kinship_fam works", {
         id = c( letters[ 1 : n ], letters[ n + (1 : n_kids) ] ),
         # founders have missing parents
         # for children, expand parents * children_per_fam to make FAM pat/mat vectors
-        pat = c( rep.int( 0, n ), rep.int( parents[ 1, ], children_per_fam ) ),
-        mat = c( rep.int( 0, n ), rep.int( parents[ 2, ], children_per_fam ) )
+        pat = c( rep.int( NA, n ), rep.int( parents[ 1, ], children_per_fam ) ),
+        mat = c( rep.int( NA, n ), rep.int( parents[ 2, ], children_per_fam ) )
     )
     
     # make kinship for all
@@ -296,8 +310,8 @@ test_that( "kinship_fam works", {
     # a smaller toy example with unrelated founders, but with interlaced founders and non-founders, and different kinship order, to check that case explicitly (and also not dependent on kinship2 being available for testing)
     fam <- tibble(
         id  = c('a', 'b', 'c', 'd', 'e', 'f', 'g'),
-        pat = c(  0,   0, 'a',   0,   0, 'e', 'f'),
-        mat = c(  0,   0, 'b',   0,   0, 'd', 'c')
+        pat = c( NA,  NA, 'a',  NA,  NA, 'e', 'f'),
+        mat = c( NA,  NA, 'b',  NA,  NA, 'd', 'c')
     )
     n <- 4
     # since all are unrelated, order is unimportant for numeric values, though column names will change that
@@ -515,8 +529,8 @@ test_that( "draw_geno_fam works", {
     # minimal FAM table for this
     fam <- tibble(
         id = c('a', 'b', 'c'),
-        pat = c(0, 0, 'a'),
-        mat = c(0, 0, 'b')
+        pat = c(NA, NA, 'a'),
+        mat = c(NA, NA, 'b')
     )
     expect_silent(
         X_all <- draw_geno_fam( X, fam )
@@ -537,8 +551,8 @@ test_that( "draw_geno_fam works", {
     # cause a new error by including a parent missing in X
     fam <- tibble(
         id = c('a', 'b', 'c'),
-        pat = c(0, 0, 'a'),
-        mat = c(0, 0, 'd') # not "b"
+        pat = c(NA, NA, 'a'),
+        mat = c(NA, NA, 'd') # not "b"
     )
     expect_error( draw_geno_fam( X, fam_g2 ) )
 })
@@ -547,8 +561,8 @@ test_that( "prune_fam works", {
     # create a pedigree with a founder without descendants
     fam <- tibble(
         id = letters[1:4],
-        pat = c(0, 0, 0, 'a'),
-        mat = c(0, 0, 0, 'b')
+        pat = c(NA, NA, NA, 'a'),
+        mat = c(NA, NA, NA, 'b')
     )
     # only want 'd' and its ancestors
     ids <- 'd'
@@ -568,8 +582,8 @@ test_that( "prune_fam works", {
     # here 'c' mated with both 'd' and 'e'
     fam <- tibble(
         id  = c('a', 'b', 'c', 'd', 'e', 'f', 'g'),
-        pat = c(  0,   0,   0,   0, 'a', 'c', 'e'),
-        mat = c(  0,   0,   0,   0, 'b', 'd', 'c')
+        pat = c( NA,  NA,  NA,  NA, 'a', 'c', 'e'),
+        mat = c( NA,  NA,  NA,  NA, 'b', 'd', 'c')
     )
     # listed both 'g' (leaf node) and one of its ancestors (to try to trip it up)
     ids <- c('g', 'c')
@@ -584,8 +598,8 @@ test_that( "admix_fam works", {
     # toy example, with interspersed founders and reordered founders in `admix`
     fam <- tibble(
         id  = c('a', 'b', 'c', 'd', 'e', 'f', 'g'),
-        pat = c(  0,   0, 'a',   0,   0, 'e', 'f'),
-        mat = c(  0,   0, 'b',   0,   0, 'd', 'c')
+        pat = c( NA,  NA, 'a',  NA,  NA, 'e', 'f'),
+        mat = c( NA,  NA, 'b',  NA,  NA, 'd', 'c')
     )
     k_subpops <- 3
     names_subpops <- paste0( 'S', 1:3 )

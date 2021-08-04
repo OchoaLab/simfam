@@ -9,9 +9,13 @@
 #' All values should be in `c(0L, 1L, 2L)`; for speed, this code does not check that `X` is valid (i.e. fractional values between 0 and 2 may not cause errors).
 #' @param fam The pedigree data.frame, in plink FAM format.
 #' Only columns `id`, `pat`, and `mat` are required.
-#' Founders must be present, and their `pat` and `mat` values must be 0 (missing).
-#' Non-founders must have both their parents be non-0.
+#' `id` must be unique and non-missing.
+#' Founders must be present, and their `pat` and `mat` values must be missing (see below).
+#' Non-founders must have both their parents be non-missing.
 #' Parents must appear earlier than their children in the table.
+#' @param missing_vals The list of ID values treated as missing.
+#' `NA` is always treated as missing.
+#' By default, the empty string ('') and zero (0) are also treated as missing (remove values from here if this is a problem).
 #'
 #' @return The random genotype matrix of the entire `fam` table, starting from the genotypes of the founders.
 #' The columns of this matrix correspond to `fam$id` in that order.
@@ -20,12 +24,12 @@
 #' @examples
 #' # The smallest pedigree, two parents and a child.
 #' # A minimal fam table with the three required columns.
-#' # Note "mother" and "father" have missing parent IDs (0), while "child" does not
+#' # Note "mother" and "father" have missing parent IDs, while "child" does not
 #' library(tibble)
 #' fam <- tibble(
 #'   id = c('father', 'mother', 'child'),
-#'   pat = c(0, 0, 'father'),
-#'   mat = c(0, 0, 'mother')
+#'   pat = c(NA, NA, 'father'),
+#'   mat = c(NA, NA, 'mother')
 #' )
 #' 
 #' # genotypes of the parents at 4 loci
@@ -50,7 +54,7 @@
 #'
 #' @export
 # NOTE: this generalized version of original `draw_geno_children` also replaces old `sim_children_generations_genotypes`!
-draw_geno_fam <- function(X, fam) {
+draw_geno_fam <- function( X, fam, missing_vals = c('', 0) ) {
     # validate inputs
     if ( missing( X ) )
         stop( '`X` is required!' )
@@ -60,7 +64,7 @@ draw_geno_fam <- function(X, fam) {
         stop( '`X` must be a matrix!' )
 
     # ensures that `X` and `fam` agree, maps parent indexes
-    data <- match_fam_founders( fam, colnames( X ), 'X', 'column' )
+    data <- match_fam_founders( fam, colnames( X ), 'X', 'column', missing_vals )
     fam <- data$fam # has new columns: founder, pati, mati
     indexes <- data$indexes # to reorder founders if needed
     

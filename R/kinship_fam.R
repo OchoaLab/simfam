@@ -11,9 +11,13 @@
 #' However, if `kinship` measures the population kinship estimates between founders, the output is also a population kinship matrix (which combines the structural/ancestral and local/pedigree relatedness values into one).
 #' @param fam The pedigree data.frame, in plink FAM format.
 #' Only columns `id`, `pat`, and `mat` are required.
-#' Founders must be present, and their `pat` and `mat` values must be 0 (missing).
-#' Non-founders must have both their parents be non-0.
+#' `id` must be unique and non-missing.
+#' Founders must be present, and their `pat` and `mat` values must be missing (see below).
+#' Non-founders must have both their parents be non-missing.
 #' Parents must appear earlier than their children in the table.
+#' @param missing_vals The list of ID values treated as missing.
+#' `NA` is always treated as missing.
+#' By default, the empty string ('') and zero (0) are also treated as missing (remove values from here if this is a problem).
 #'
 #' @return The kinship matrix of the entire `fam` table, taking the relatedness of the founders into account.
 #' The rows and columns of this kinship matrix correspond to `fam$id` in that order.
@@ -21,12 +25,12 @@
 #' @examples
 #' # The smallest pedigree, two parents and a child.
 #' # A minimal fam table with the three required columns.
-#' # Note "mother" and "father" have missing parent IDs (0), while "child" does not
+#' # Note "mother" and "father" have missing parent IDs, while "child" does not
 #' library(tibble)
 #' fam <- tibble(
 #'   id = c('father', 'mother', 'child'),
-#'   pat = c(0, 0, 'father'),
-#'   mat = c(0, 0, 'mother')
+#'   pat = c(NA, NA, 'father'),
+#'   mat = c(NA, NA, 'mother')
 #' )
 #' 
 #' # Kinship of the parents, here two unrelated/outbred individuals:
@@ -52,7 +56,7 @@
 #' <https://www.cog-genomics.org/plink/1.9/formats#fam>
 #'
 #' @export
-kinship_fam <- function(kinship, fam) {
+kinship_fam <- function( kinship, fam, missing_vals = c('', 0) ) {
     if ( missing( kinship ) )
         stop( '`kinship` is required!' )
     if ( missing( fam ) )
@@ -64,7 +68,7 @@ kinship_fam <- function(kinship, fam) {
     
     # ensures that `kinship` and `fam` agree, maps parent indexes
     # also loads of `fam` validations
-    data <- match_fam_founders( fam, rownames( kinship ), 'kinship', 'row' )
+    data <- match_fam_founders( fam, rownames( kinship ), 'kinship', 'row', missing_vals )
     fam <- data$fam # has new columns: founder, pati, mati
     indexes <- data$indexes # to reorder founders if needed
     

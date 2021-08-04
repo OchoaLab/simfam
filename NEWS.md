@@ -16,3 +16,7 @@
 
 - Function `sim_pedigree` now assigns IDs without `g` prefix (format is just `\d+-\d+` with two integers denoting generation and index, separated by a dash).
 
+# simfam 0.0.3.9000 (2021-08-03)
+
+- Function `sim_pedigree` now returns parents of founders as `NA` (used to be `0`).
+- All functions that accept a FAM table as input now treat `NA` parents correctly as missing (i.e., those individuals with missing parents are treated as founders), and by default the empty strings ('') and zero (0) are also treated as missing (used to be only `0` was treated as missing).

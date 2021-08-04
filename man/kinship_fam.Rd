@@ -4,7 +4,7 @@
 \alias{kinship_fam}
 \title{Calculate kinship matrix of a pedigree with structured founders}
 \usage{
-kinship_fam(kinship, fam)
+kinship_fam(kinship, fam, missing_vals = c("", 0))
 }
 \arguments{
 \item{kinship}{The kinship matrix of the founders.
@@ -16,9 +16,14 @@ However, if \code{kinship} measures the population kinship estimates between fou
 
 \item{fam}{The pedigree data.frame, in plink FAM format.
 Only columns \code{id}, \code{pat}, and \code{mat} are required.
-Founders must be present, and their \code{pat} and \code{mat} values must be 0 (missing).
-Non-founders must have both their parents be non-0.
+\code{id} must be unique and non-missing.
+Founders must be present, and their \code{pat} and \code{mat} values must be missing (see below).
+Non-founders must have both their parents be non-missing.
 Parents must appear earlier than their children in the table.}
+
+\item{missing_vals}{The list of ID values treated as missing.
+\code{NA} is always treated as missing.
+By default, the empty string ('') and zero (0) are also treated as missing (remove values from here if this is a problem).}
 }
 \value{
 The kinship matrix of the entire \code{fam} table, taking the relatedness of the founders into account.
@@ -31,12 +36,12 @@ Output agrees with \code{\link[kinship2:kinship]{kinship2::kinship()}} but only 
 \examples{
 # The smallest pedigree, two parents and a child.
 # A minimal fam table with the three required columns.
-# Note "mother" and "father" have missing parent IDs (0), while "child" does not
+# Note "mother" and "father" have missing parent IDs, while "child" does not
 library(tibble)
 fam <- tibble(
   id = c('father', 'mother', 'child'),
-  pat = c(0, 0, 'father'),
-  mat = c(0, 0, 'mother')
+  pat = c(NA, NA, 'father'),
+  mat = c(NA, NA, 'mother')
 )
 
 # Kinship of the parents, here two unrelated/outbred individuals:

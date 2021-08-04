@@ -31,8 +31,8 @@
 #' - `fam`: the pedigree, a tibble in plink FAM format.  Following the column naming convention of the related `genio` package, it contains columns:
 #'   - `fam`: Family ID, trivial "fam1" for all individuals
 #'   - `id`: Individual ID, in this case a code of format (in regular expression) "(\\d+)-(\\d+)" where the first integer is the generation number and the second integer is the index number (1 to `n[g]` for generation `g`).
-#'   - `pat`: Paternal ID.  Matches an `id` except for founders, which have fathers set to 0.
-#'   - `mat`: Maternal ID.  Matches an `id` except for founders, which have mothers set to 0.
+#'   - `pat`: Paternal ID.  Matches an `id` except for founders, which have fathers set to `NA`.
+#'   - `mat`: Maternal ID.  Matches an `id` except for founders, which have mothers set to `NA`.
 #'   - `sex`: integers 1L (male) or 2L (female) which were drawn randomly; no other values occur in these outputs.
 #'   - `pheno`: Phenotype, here all 0 (missing value).
 #' - `kinship_local`: if `full = FALSE`, the local kinship matrix of the last generation, otherwise a list of local kinship matrices for every generation.
@@ -94,8 +94,8 @@ sim_pedigree <- function(
         fam = 'fam1', # place in desired order, but there aren't families really
         # names of individuals in first generation (founders)
         id = paste0( '1-', 1 : n[1] ),
-        pat = 0,
-        mat = 0,
+        pat = NA,
+        mat = NA,
         sex = sex,
         pheno = 0
     )
@@ -149,8 +149,8 @@ sim_pedigree <- function(
         # extract from master table, make it match current `kinship_local` (of parents) directly!
         fam_p <- fam[ fam$id %in% rownames( kinship_local ), ]
         # set parents as missing now, necessary for code to work
-        fam_p$pat <- 0
-        fam_p$mat <- 0
+        fam_p$pat <- NA
+        fam_p$mat <- NA
         # all set, other parts don't matter for these purposes
         # add children to end
         fam_p <- rbind( fam_p, fam_g )

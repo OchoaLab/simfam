@@ -1,5 +1,6 @@
 # shared by `draw_geno_fam` and `kinship_fam`
-match_fam_founders <- function( fam, names_founders, name_var, name_dim ) {
+# performs lots of validations on the FAM table
+match_fam_founders <- function( fam, names_founders, name_var, name_dim, missing_vals = c('', 0) ) {
     # validate inputs
     if ( missing( fam ) )
         stop( '`fam` is required!' )
@@ -24,14 +25,35 @@ match_fam_founders <- function( fam, names_founders, name_var, name_dim ) {
     # make sure everything we need exists
     if ( is.null( names_founders ) )
         stop( '`', name_var, '` must have ', name_dim, ' names for parents!' )
+    if ( anyNA( names_founders ) )
+        stop( '`', name_var, '` cannot have NAs in ', name_dim, ' names!' )
+    # IDs should be unique too!
+    if ( length( names_founders ) != length( unique( names_founders ) ) )
+        stop( '`', name_var, '` cannot have repeats in ', name_dim, ' names!' )
     # number of founders now properly defined
     n <- length( names_founders )
+
+    # normalize missing values for individuals (id, pat, mat)
+    # the only obvious value that is missing no matter what we chose is NA
+    # these others are treated as NA-equivalent
+    for ( missing_val in missing_vals ) {
+        fam$id[ fam$id == missing_val ] <- NA
+        fam$pat[ fam$pat == missing_val ] <- NA
+        fam$mat[ fam$mat == missing_val ] <- NA
+    }
+    
+    # main ID can never be missing
+    if ( anyNA( fam$id ) )
+        stop( '`fam$id` cannot contain NAs!' )
+    # main IDs should be unique too!
+    if ( length( fam$id ) != length( unique( fam$id ) ) )
+        stop( '`fam$id` cannot have repeated IDs!' )
     
     # let's only require that `fam` founders are present in `names_founders`
     # so we'll allow different orders, and for `names_founders` to have extra people
     # outside this function we'll want to subset those data so they agree with `fam`, let's get that mapping here too
     # founder status (i.e. won't assume founders are all in the beginning of fam, can be discontiguous)
-    fam$founder <- fam$pat == 0 | fam$mat == 0 # logical
+    fam$founder <- is.na( fam$pat ) | is.na( fam$mat ) # logical
     indexes <- match( fam$id[ fam$founder ], names_founders )
     # so only error is if any of these are NA (`fam$id` of founder not in `names_founders`)
     if ( anyNA( indexes ) )

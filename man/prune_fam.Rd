@@ -4,20 +4,26 @@
 \alias{prune_fam}
 \title{Remove non-ancestors of a set of individuals from pedigree}
 \usage{
-prune_fam(fam, ids)
+prune_fam(fam, ids, missing_vals = c("", 0))
 }
 \arguments{
 \item{fam}{The pedigree data.frame, in plink FAM format.
 Only columns \code{id}, \code{pat}, and \code{mat} are required.
-Founders must be present, and their \code{pat} and \code{mat} values must be 0 (missing).
-Non-founders must have both their parents be non-0.
+\code{id} must be unique and non-missing.
+Founders must be present, and their \code{pat} and \code{mat} values must be missing (see below).
+Non-founders must have both their parents be non-missing.
 Parents must appear earlier than their children in the table.}
 
 \item{ids}{The list of individuals of interest, whose ancestors we want to keep.
 All must be present in \code{fam$id}.}
+
+\item{missing_vals}{The list of ID values treated as missing.
+\code{NA} is always treated as missing.
+By default, the empty string ('') and zero (0) are also treated as missing (remove values from here if this is a problem).}
 }
 \value{
 The filtered FAM table with non-ancestors of \code{ids} excluded.
+IDs that are \code{NA}-equivalent (see \code{missing_vals}) will be mapped to \code{NA}.
 }
 \description{
 This function accepts an input pedigree and a list of individuals of interest, and returns the subset of the pedigree including only the individuals of interest and their direct ancestors.
@@ -28,8 +34,8 @@ This is useful in simulations, to avoid modeling/drawing genotypes of individual
 library(tibble)
 fam <- tibble(
     id  = c('mom', 'dad', 'bob', 'child'),
-    pat = c(    0,     0,     0,   'dad'),
-    mat = c(    0,     0,     0,   'mom')
+    pat = c(   NA,    NA,    NA,   'dad'),
+    mat = c(   NA,    NA,    NA,   'mom')
 )
 # only want 'child' and its ancestors
 ids <- 'child'

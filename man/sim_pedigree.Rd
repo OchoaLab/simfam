@@ -52,9 +52,9 @@ A list with two named elements:
 \item \code{fam}: the pedigree, a tibble in plink FAM format.  Following the column naming convention of the related \code{genio} package, it contains columns:
 \itemize{
 \item \code{fam}: Family ID, trivial "fam1" for all individuals
-\item \code{id}: Individual ID, in this case a code of format (in regular expression) "g(\\d+)-(\\d+)" where the first integer is the generation number and the second integer is the index number (1 to \code{n[g]} for generation \code{g}).
-\item \code{pat}: Paternal ID.  Matches an \code{id} except for founders, which have fathers set to 0.
-\item \code{mat}: Maternal ID.  Matches an \code{id} except for founders, which have mothers set to 0.
+\item \code{id}: Individual ID, in this case a code of format (in regular expression) "(\\d+)-(\\d+)" where the first integer is the generation number and the second integer is the index number (1 to \code{n[g]} for generation \code{g}).
+\item \code{pat}: Paternal ID.  Matches an \code{id} except for founders, which have fathers set to \code{NA}.
+\item \code{mat}: Maternal ID.  Matches an \code{id} except for founders, which have mothers set to \code{NA}.
 \item \code{sex}: integers 1L (male) or 2L (female) which were drawn randomly; no other values occur in these outputs.
 \item \code{pheno}: Phenotype, here all 0 (missing value).
 }
