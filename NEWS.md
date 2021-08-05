@@ -30,3 +30,8 @@
 - Added README.md
 - Added documentation for package entry (`simfam-package`).
 - Fixed wording in DESCRIPTION and vignette.
+
+# simfam 0.0.6.9000 (2021-08-04)
+
+- Function `sim_pedigree` removed `verbose` option (it was a holdout from original code, which could get stuck in some situations; the new code doesn't get stuck).
+

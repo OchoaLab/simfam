@@ -11,8 +11,7 @@ sim_pedigree(
   kinship_local = diag(n[1])/2,
   cutoff = 1/4^3,
   children_min = 1L,
-  full = FALSE,
-  verbose = FALSE
+  full = FALSE
 )
 }
 \arguments{
@@ -43,8 +42,6 @@ As these numbers may not exactly equal the target population size, random famili
 
 \item{full}{If \code{TRUE}, part of the return object is a list of local kinship matrices for every generation.
 If \code{FALSE} (default), only the local kinship matrix of the last generation is returned.}
-
-\item{verbose}{If \code{TRUE}, algorithm reports on the current generation being processed and other steps.}
 }
 \value{
 A list with two named elements:

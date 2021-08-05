@@ -25,7 +25,6 @@
 #' As these numbers may not exactly equal the target population size, random families are incremented or decremented (respecting the minimum family size) by single counts until the target population size is met.
 #' @param full If `TRUE`, part of the return object is a list of local kinship matrices for every generation.
 #' If `FALSE` (default), only the local kinship matrix of the last generation is returned.
-#' @param verbose If `TRUE`, algorithm reports on the current generation being processed and other steps.
 #'
 #' @return A list with two named elements:
 #' - `fam`: the pedigree, a tibble in plink FAM format.  Following the column naming convention of the related `genio` package, it contains columns:
@@ -63,8 +62,7 @@ sim_pedigree <- function(
                          kinship_local = diag( n[1] ) / 2,
                          cutoff = 1 / 4^3,
                          children_min = 1L,
-                         full = FALSE,
-                         verbose = FALSE
+                         full = FALSE
                          ) {
     # check for missing stuff
     if ( missing( n ) )
@@ -111,11 +109,7 @@ sim_pedigree <- function(
     }
     
     for (g in 2:G) {
-        if (verbose)
-            message('g = ', g)
         # let's pick pairs of parents
-        if (verbose)
-            message('draw_couples_nearest')
         parents <- draw_couples_nearest(kinship_local, sex, cutoff = cutoff)
         n_fam <- ncol( parents )
         # worst-case scenario is everybody is too related so there isn't a single parent and no more generations can be picked
@@ -127,8 +121,6 @@ sim_pedigree <- function(
         parents <- parents[ , order( colMeans( parents ) ), drop = FALSE ]
         
         # draw how many children each family has
-        if (verbose)
-            message('draw_num_children_per_fam')
         children_per_fam <- draw_num_children_per_fam( n_fam, n[g], children_min )
 
         # FAM table for this generation
@@ -155,8 +147,6 @@ sim_pedigree <- function(
         # add children to end
         fam_p <- rbind( fam_p, fam_g )
         
-        if (verbose)
-            message('kinship_fam (local)')
         # calculates kinship for entire `fam_p` provided!
         kinship_local <- kinship_fam( kinship_local, fam_p )
         # subset to keep children only now
