@@ -246,7 +246,7 @@ For this we use another external package, `bnpsd`, to construct the admixture pa
 ```{r}
 library(bnpsd)
 # additional admixture parameters:
-# number of intermediate subpopulations
+# number of ancestries
 K <- 3
 # define population structure
 # FST values for k=3 subpopulations
@@ -408,7 +408,7 @@ library(simfam)
 # data dimensions
 n <- 500 # number of individuals per generation
 G <- 10 # number of generations
-K <- 3 # number of intermediate subpopulations
+K <- 3 # number of ancestries
 m <- 5000 # number of loci
 
 # draw the random pedigree with those properties.

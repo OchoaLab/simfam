@@ -1,13 +1,13 @@
 Package: simfam
 Title: Simulate and Model Family Pedigrees With Structured Founders
-Version: 0.0.4.9000
+Version: 0.0.5.9000
 Authors@R: 
     person(given = "Alejandro",
 	   family = "Ochoa",
 	   role = c("aut", "cre"),
 	   email = "alejandro.ochoa@duke.edu",
            comment = c(ORCID = "0000-0003-4928-3403"))
-Description: The focus is on simulating and modeling families with founders drawn from a structured population (i.e. with different ancestries or other potentially non-family relatedness), in contrast to traditional pedigree analysis that treats all founders as equally unrelated.  Main function simulates a random pedigree for many generations, avoiding close relatives, pairing individuals according to their randomly-drawn sex, and with variable children sizes to result in a target population size per generation.  Auxiliary functions calculate kinship matrices, admixture matrices, and draw random genotypes across arbitrary pedigree structures starting from the corresponding founder values.  The code is built around the plink FAM table format.
+Description: The focus is on simulating and modeling families with founders drawn from a structured population (for example, with different ancestries or other potentially non-family relatedness), in contrast to traditional pedigree analysis that treats all founders as equally unrelated.  Main function simulates a random pedigree for many generations, avoiding close relatives, pairing closest individuals according to a 1D geography and their randomly-drawn sex, and with variable children sizes to result in a target population size per generation.  Auxiliary functions calculate kinship matrices, admixture matrices, and draw random genotypes across arbitrary pedigree structures starting from the corresponding founder values.  The code is built around the plink FAM table format for pedigrees.
 License: GPL (>= 3)
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)

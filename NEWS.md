@@ -24,3 +24,9 @@
 # simfam 0.0.4.9000 (2021-08-04)
 
 - Added vignette with beautiful examples!
+
+# simfam 0.0.5.9000 (2021-08-04)
+
+- Added README.md
+- Added documentation for package entry (`simfam-package`).
+- Fixed wording in DESCRIPTION and vignette.
