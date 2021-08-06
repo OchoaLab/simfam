@@ -1,4 +1,3 @@
-# original was `draw_unrelated_couples_nearest`
 # select parents for next generation randomly pairing only opposite-sex individuals while avoiding relatives, but extremely strongly biased for nearest pairings
 # default is to avoid up to second cousins (so 3rd cousins and on is OK)
 draw_couples_nearest <- function(

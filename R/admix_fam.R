@@ -2,20 +2,12 @@
 #'
 #' Calculates a full admixture proportions matrix (for all individuals in the provided pedigree FAM table) starting from the admixture proportions of the founders as provided.
 #'
+#' @inheritParams draw_geno_fam
 #' @param admix The admixture proportions matrix of the founders (individuals along rows and ancestries along columns).
 #' This matrix must have row names that identify each founder (matching codes in `fam$id`).
 #' Individuals may be in a different order than `fam$id`.
 #' Extra individuals in `admix` but absent in `fam$id` will be silently ignored.
 #' All values should be non-negative and each row of `admix` should sum to one; for speed, this code does not check that `admix` is valid, just averages data as-is.
-#' @param fam The pedigree data.frame, in plink FAM format.
-#' Only columns `id`, `pat`, and `mat` are required.
-#' `id` must be unique and non-missing.
-#' Founders must be present, and their `pat` and `mat` values must be missing (see below).
-#' Non-founders must have both their parents be non-missing.
-#' Parents must appear earlier than their children in the table.
-#' @param missing_vals The list of ID values treated as missing.
-#' `NA` is always treated as missing.
-#' By default, the empty string ('') and zero (0) are also treated as missing (remove values from here if this is a problem).
 #'
 #' @return The admixture proportions matrix of the entire `fam` table, based on the admixture of the founders.
 #' These are expectations, calculated for each individual as the average ancestry proportion of the parents.
@@ -54,7 +46,6 @@
 #' <https://www.cog-genomics.org/plink/1.9/formats#fam>
 #'
 #' @export
-# replaces old `update_admix_proportions_children` and `sim_children_generations_admix_proportions`
 admix_fam <- function( admix, fam, missing_vals = c('', 0) ) {
     if ( missing( admix ) )
         stop( '`admix` is required!' )

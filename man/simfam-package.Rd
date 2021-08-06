@@ -56,6 +56,8 @@ X_G <- draw_geno_last_gen( X_1, fam, ids )
 
 # 2) calculate kinship through pedigree, starting from kinship of founders!
 kinship <- kinship_fam( kinship_1, fam )
+# version for last generation only, which uses less memory
+kinship_G <- kinship_last_gen( kinship_1, fam, ids )
 
 # 3) calculate expected admixture proportions through pedigree, starting from admixture of founders!
 admix_proportions <- admix_fam( admix_proportions_1, fam )

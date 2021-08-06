@@ -47,3 +47,9 @@
 
 - Rewrote core of function `draw_geno_fam` in C++ (using Rcpp).
   New version is much faster and uses about half as much memory as the previous pure-R version!
+
+# simfam 0.0.10.9000 (2021-08-06)
+
+- Added function `kinship_last_gen` for calculating kinship for last generation only, of a pedigree with non-overlapping generations, saving lots of memory when the number of generations is large (behavior resembles original function, though internally it's a wrapper around the more general `kinship_fam`).
+- Other functions now inherit params, the main function being `draw_geno_fam` (for the other `*_fam` functions, which are respectively sources for `*_last_gen` functions).
+- Removed obsolete comments.

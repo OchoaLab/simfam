@@ -342,6 +342,40 @@ test_that( "kinship_fam works", {
     expect_equal( kinship_all, kinship_all_exp )
 })
 
+test_that( "kinship_last_gen works", {
+    # test toy example here only, G==3
+    fam <- tibble(
+        id  = c('a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'),
+        pat = c( NA,  NA, 'a',  NA,  NA, 'e', 'f', 'f'),
+        mat = c( NA,  NA, 'b',  NA,  NA, 'd', 'c', 'c')
+    )
+    n <- 4
+    # since all are unrelated, order is unimportant for numeric values, though column names will change that
+    names_1 <- c('d', 'e', 'a', 'b')
+    kinship <- diag( n ) / 2
+    colnames( kinship ) <- names_1
+    rownames( kinship ) <- names_1
+    # expected output
+    # note order is that of `fam` (subset of last generation
+    kinship_G_exp <- matrix(
+        c(
+            1/2, 1/4,
+            1/4, 1/2
+        ),
+        nrow = 2,
+        ncol = 2
+    )
+    names_2 <- c('c', 'f')
+    names_G <- c('g', 'h')
+    colnames( kinship_G_exp ) <- names_G
+    rownames( kinship_G_exp ) <- names_G
+    ids <- list( names_1, names_2, names_G )
+    expect_silent(
+        kinship_G <- kinship_last_gen( kinship, fam, ids )
+    )
+    expect_equal( kinship_G, kinship_G_exp )
+})
+
 validate_fam <- function( fam, n, G ) {
     # fix n if needed
     if ( length( n ) == 1 )

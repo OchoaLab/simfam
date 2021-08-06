@@ -53,7 +53,6 @@
 #' <https://www.cog-genomics.org/plink/1.9/formats#fam>
 #'
 #' @export
-# NOTE: this generalized version of original `draw_geno_children` also replaces old `sim_children_generations_genotypes`!
 draw_geno_fam <- function( X, fam, missing_vals = c('', 0) ) {
     # validate inputs
     if ( missing( X ) )

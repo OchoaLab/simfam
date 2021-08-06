@@ -3,21 +3,13 @@
 #' Calculates a full kinship matrix (between all individuals in the provided pedigree FAM table) taking into account the relatedness of the founders as provided.
 #' Output agrees with [kinship2::kinship()] but only when founders are unrelated/outbred (in other words, that function does not allow relatedness between founders).
 #'
+#' @inheritParams draw_geno_fam
 #' @param kinship The kinship matrix of the founders.
 #' This matrix must have column and row names that identify each founder (matching codes in `fam$id`).
 #' Individuals may be in a different order than `fam$id`.
 #' Extra individuals in `kinship` but absent in `fam$id` will be silently ignored.
 #' A traditional pedigree calculation would use `kinship = diag(n)/2` (plus appropriate column/row names), where `n` is the number of founders, to model unrelated and outbred founders.
 #' However, if `kinship` measures the population kinship estimates between founders, the output is also a population kinship matrix (which combines the structural/ancestral and local/pedigree relatedness values into one).
-#' @param fam The pedigree data.frame, in plink FAM format.
-#' Only columns `id`, `pat`, and `mat` are required.
-#' `id` must be unique and non-missing.
-#' Founders must be present, and their `pat` and `mat` values must be missing (see below).
-#' Non-founders must have both their parents be non-missing.
-#' Parents must appear earlier than their children in the table.
-#' @param missing_vals The list of ID values treated as missing.
-#' `NA` is always treated as missing.
-#' By default, the empty string ('') and zero (0) are also treated as missing (remove values from here if this is a problem).
 #'
 #' @return The kinship matrix of the entire `fam` table, taking the relatedness of the founders into account.
 #' The rows and columns of this kinship matrix correspond to `fam$id` in that order.

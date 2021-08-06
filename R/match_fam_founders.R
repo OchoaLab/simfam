@@ -1,4 +1,4 @@
-# shared by `draw_geno_fam` and `kinship_fam`
+# shared by `draw_geno_fam`, `kinship_fam`, `admix_fam`
 # performs lots of validations on the FAM table
 match_fam_founders <- function( fam, names_founders, name_var, name_dim, missing_vals = c('', 0) ) {
     # validate inputs

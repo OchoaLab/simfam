@@ -402,7 +402,7 @@ plot_popkin(
 Here we will simulate a much larger population size and a pedigree with a larger number of generations, to produce data that may better resemble real human data.
 We will make no attempt of visualize pedigrees or show individual labels.
 The whole code, redundant with our earlier analysis, is presented with minor explanations.
-Note, however, use of the newly-introduced function `draw_geno_last_gen` to directly construct data for the last generation only, which also saves memory compared to the more general `draw_geno_fam` shown earlier.
+Note, however, use of the newly-introduced functions `draw_geno_last_gen` and `kinship_last_gen` to directly construct data for the last generation only, which also saves memory compared to the more general `draw_geno_fam` and `kinship_fam` shown earlier.
 
 ```{r}
 library(simfam)
@@ -448,13 +448,12 @@ kinship_total_G_est <- popkin( X_G )
 
 # calculate true total kinship matrix
 kinship_total_1 <- coanc_to_kinship( coanc_admix( admix_proportions_1, inbr_subpops ) )
-kinship_total <- kinship_fam( kinship_total_1, fam ) # all generations
-kinship_total_G <- kinship_total[ indexes_G, indexes_G ] # last generation only
+kinship_total_G <- kinship_last_gen( kinship_total_1, fam, ids )
 
 # kinship due to admixture only
 admix_proportions <- admix_fam( admix_proportions_1, fam ) # admix all generations
-kinship_admix <- coanc_to_kinship( coanc_admix( admix_proportions, inbr_subpops ) ) # all
-kinship_admix_G <- kinship_admix[ indexes_G, indexes_G ] # last generation only
+admix_proportions_G <- admix_proportions[ indexes_G, ] # last generation only
+kinship_admix_G <- coanc_to_kinship( coanc_admix( admix_proportions_G, inbr_subpops ) )
 
 # total kinship approximation from components
 kinship_total_approx_G <- coanc_to_kinship(
