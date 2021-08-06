@@ -16,37 +16,36 @@
 #' data <- sim_pedigree( n, G )
 #' # creates FAM table (describes pedigree, most important!)
 #' fam <- data$fam
+#' # lists of IDs split by generation
+#' ids <- data$ids
 #' # and local kinship of last generation
 #' kinship_local_G <- data$kinship_local
 #'
-#' # useful IDs from first (founders) and last generations
-#' # in same format as IDs in FAM table
-#' ids_1 <- paste0( 1, '-', 1:n )
-#' ids_G <- paste0( G, '-', 1:n )
-#'
 #' # prune pedigree to speed up simulations/etc by removing individuals without
 #' # descendants among set of individuals (here it's last generation)
-#' fam <- prune_fam( fam, ids_G )
+#' fam <- prune_fam( fam, ids[[ G ]] )
 #'
 #' # to model descendants, first need to setup founders with dummy toy data
 #' # 1) random genotypes
 #' X_1 <- matrix( rbinom( n*m, 2, 0.5 ), m, n )
-#' colnames( X_1 ) <- ids_1 # need IDs to match founders
+#' colnames( X_1 ) <- ids[[ 1 ]] # need IDs to match founders
 #' # 2) kinship of unrelated/outbred individuals
 #' # (but in practice can be any structure!)
 #' kinship_1 <- diag( n ) / 2
-#' colnames( kinship_1 ) <- ids_1 # need IDs to match founders
-#' rownames( kinship_1 ) <- ids_1 # ditto
+#' colnames( kinship_1 ) <- ids[[ 1 ]] # need IDs to match founders
+#' rownames( kinship_1 ) <- ids[[ 1 ]] # ditto
 #' # 3) construct dummy admixture proportions
 #' admix_proportions_1 <- matrix( runif( n * K ), n, K )
 #' # normalize so rows sum to 1
 #' admix_proportions_1 <- admix_proportions_1 / rowSums( admix_proportions_1 )
-#' rownames( admix_proportions_1 ) <- ids_1 # need IDs to match founders
+#' rownames( admix_proportions_1 ) <- ids[[ 1 ]] # need IDs to match founders
 #'
 #' # now construct/draw/propagate information across the pedigree!
 #'
 #' # 1) draw genotypes through pedigree, starting from founders!
 #' X <- draw_geno_fam( X_1, fam )
+#' # version for last generation only, which uses less memory
+#' X_G <- draw_geno_last_gen( X_1, fam, ids )
 #'
 #' # 2) calculate kinship through pedigree, starting from kinship of founders!
 #' kinship <- kinship_fam( kinship_1, fam )

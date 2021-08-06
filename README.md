@@ -39,6 +39,8 @@ Simulate a random pedigree with a desired number of individuals per generation `
 data <- sim_pedigree( n, G )
 # creates a plink-formatted FAM table (describes pedigree, most important!)
 fam <- data$fam
+# lists of IDs split by generation
+ids <- data$ids
 # and local kinship of last generation
 kinship_local_G <- data$kinship_local
 ```
@@ -46,14 +48,18 @@ kinship_local_G <- data$kinship_local
 The basics of encoding a pedigree in a `fam` table (a data.frame) is that every individual in the pedigree is a row, column `id` identifies the individual with a unique number or string, columns `pat` and `mat` identify the parents of the individual (who are themselves earlier rows), and `sex` encodes the sex of the individual numerically (1=male, 2=female).
 The following functions work wirh arbitrary pedigrees/`fam` data.frames:
 
-Prune a given `fam`, to speed up simulations/etc, by removing individuals without descendants among set of individuals `ids`:
+Prune a given `fam`, to speed up simulations/etc, by removing individuals without descendants among set of individuals `ids` (in this example, the last generation from the output of `sim_pedigree`):
 ```r
-fam <- prune_fam( fam, ids )
+fam <- prune_fam( fam, ids[[G]] )
 ```
 
 Draw genotypes `X` through pedigree, starting from genotypes of founders (`X_1`):
 ```r
 X <- draw_geno_fam( X_1, fam )
+# Version for last generation only, which uses less memory.
+# (`ids` must be as from `sim_pedigree`,
+# a list partitioning non-overlapping generations)
+X_G <- draw_geno_last_gen( X_1, fam, ids )
 ```
 
 Calculate kinship through pedigree, starting from kinship of founders (`kinship_1`):
