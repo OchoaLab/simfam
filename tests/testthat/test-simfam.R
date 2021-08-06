@@ -458,44 +458,19 @@ test_that( "sim_pedigree works", {
     }
 })
 
-test_that( "draw_geno_child works", {
-    # cause errors on purpose
-    expect_error( draw_geno_child() )
-    expect_error( draw_geno_child( 1:10 ) ) # must be matrix
-    expect_error( draw_geno_child( matrix(0, 3, 3) ) ) # must have 2 columns
-    
-    # though normally output is random, some cases are deterministic
-    # here parents are opposite homozygous
-    m <- 3
-    X <- cbind( rep.int( 0L, m ), rep.int( 2L, m ) )
-    expect_silent(
-        x <- draw_geno_child( X )
-    )
-    expect_equal( x, rep.int( 1L, m ) )
-    
-    # same homozygous
-    x_exp <- c(0L, 2L, 0L)
-    X <- cbind( x_exp, x_exp )
-    expect_silent(
-        x <- draw_geno_child( X )
-    )
-    expect_equal( x, x_exp )
-
-    # heterozygous, result is random but certainly have some minimal expectations for genotypes
-    X <- matrix( 1L, nrow = m, ncol = 2 )
-    expect_silent(
-        x <- draw_geno_child( X )
-    )
-    expect_equal( length( x ), m )
-    expect_true( all( x %in% 0L:2L ) )
-
-    # and completely random data
-    X <- matrix( rbinom( m * 2, 2, 0.5 ), nrow = m, ncol = 2 )
-    expect_silent(
-        x <- draw_geno_child( X )
-    )
-    expect_equal( length( x ), m )
-    expect_true( all( x %in% 0L:2L ) )
+test_that( "draw_allele (cpp) works", {
+    # test homozygotes, which are deterministic
+    expect_equal( draw_allele(2), 1 )
+    expect_equal( draw_allele(0), 0 )
+    # heterozygote is a random coin toss
+    for ( i in 1:10 ) { # repeat enough times to know weird stuff doesn't happen
+        expect_true( draw_allele(1) %in% c(0L, 1L) )
+    }
+    # NA should return NA
+    expect_true( is.na( draw_allele( NA ) ) )
+    # values out of range must cause errors
+    expect_error( draw_allele( -1 ) )
+    expect_error( draw_allele( 3 ) )
 })
 
 test_that( "draw_geno_fam works", {
@@ -536,6 +511,7 @@ test_that( "draw_geno_fam works", {
     expect_true( !anyNA( X_all ) )
     expect_true( all( X_all %in% 0L:2L ) )
     expect_equal( colnames( X_all ), fam$id )
+    expect_equal( X_all[ , 1 : n[1] ], X ) # submatrix of parents must be equal! (here there was no reordering)
     
     # a more explicit toy case with deterministic solution
     # also tests for edge case of a single child
@@ -554,8 +530,15 @@ test_that( "draw_geno_fam works", {
     )
     expect_equal( X_all, X_all_exp )
 
-    # same homozygous
-    x_exp <- c(0L, 2L, 0L)
+    # same but reorder parents in input
+    X <- X[ , 2:1 ]
+    expect_silent(
+        X_all <- draw_geno_fam( X, fam )
+    )
+    expect_equal( X_all, X_all_exp )
+
+    # same homozygous, and add NAs!
+    x_exp <- c(0L, 2L, NA)
     X <- cbind( x_exp, x_exp )
     colnames( X ) <- letters[1:2]
     X_all_exp <- cbind( X, x_exp )

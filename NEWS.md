@@ -42,3 +42,8 @@
 # simfam 0.0.8.9000 (2021-08-05)
 
 - Added function `draw_geno_last_gen` for drawing genotypes for last generation only, of a pedigree with non-overlapping generations, saving lots of memory when the number of generations is large (behavior resembles original function, though internally it's a wrapper around the more general `draw_geno_fam`).
+
+# simfam 0.0.9.9000 (2021-08-06)
+
+- Rewrote core of function `draw_geno_fam` in C++ (using Rcpp).
+  New version is much faster and uses about half as much memory as the previous pure-R version!

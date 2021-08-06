@@ -66,38 +66,22 @@ draw_geno_fam <- function( X, fam, missing_vals = c('', 0) ) {
     # ensures that `X` and `fam` agree, maps parent indexes
     data <- match_fam_founders( fam, colnames( X ), 'X', 'column', missing_vals )
     fam <- data$fam # has new columns: founder, pati, mati
-    indexes <- data$indexes # to reorder founders if needed
     
-    # dimensions of output data
-    m_loci <- nrow( X )
-    n_ind_fam <- nrow( fam )
+    # set variables up for passing to C++, and validate stuff
+    # NOTE: these are R indexes, need to turn into zero-based C++ indexes!
+    indexes <- data$indexes - 1 # this is `i_founder_in` in the C++ function, everything else is unambiguous
+    i_founder_out <- which( fam$founder ) - 1
+    i_child <- which( !fam$founder ) - 1
+    i_pat <- fam$pati[ !fam$founder ] - 1
+    i_mat <- fam$mati[ !fam$founder ] - 1
     
-    # initialize output matrix
-    X_fam <- matrix(
-        NA,
-        nrow = m_loci,
-        ncol = n_ind_fam
-    )
+    # create the output matrix using C++!
+    X_fam <- draw_geno_fam_cpp( X, indexes, i_founder_out, i_child, i_pat, i_mat )
+    
     # copy names of individuals and loci
     colnames( X_fam ) <- fam$id
     rownames( X_fam ) <- rownames( X ) # may be NULL, meh
-    # copy founders
-    # reorder/subset columns of X if needed!
-    # place them where those founders are in `fam` (`fam$founder` is logical)
-    X_fam[ , fam$founder ] <- X[ , indexes ]
     
-    # navigate individuals
-    for ( i in 1 : n_ind_fam ) {
-        # skip founders
-        if ( fam$founder[i] ) next
-        # get parents, as indexes of the current genotype matrix (precalculated)
-        parents_j <- c( fam$pati[ i ], fam$mati[ i ] )
-        # and extracts their genotypes
-        X_parents_j <- X_fam[ , parents_j, drop = FALSE ]
-        # draw child, add to output matrix
-        X_fam[, i] <- draw_geno_child( X_parents_j )
-    }
-
     # done, return genotype matrix of all FAM
     return( X_fam )
 }

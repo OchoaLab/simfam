@@ -1,6 +1,6 @@
 Package: simfam
 Title: Simulate and Model Family Pedigrees With Structured Founders
-Version: 0.0.8.9000
+Version: 0.0.9.9000
 Authors@R: 
     person(given = "Alejandro",
 	   family = "Ochoa",
@@ -13,6 +13,7 @@ Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
 RoxygenNote: 7.1.1
 Imports:
+    Rcpp,
     stats,
     tibble
 Suggests: 
@@ -25,3 +26,5 @@ Suggests:
     rmarkdown
 Config/testthat/edition: 3
 VignetteBuilder: knitr
+LinkingTo: 
+    Rcpp
