@@ -35,3 +35,6 @@
 
 - Function `sim_pedigree` removed `verbose` option (it was a holdout from original code, which could get stuck in some situations; the new code doesn't get stuck).
 
+# simfam 0.0.7.9000 (2021-08-05)
+
+- Function `sim_pedigree` now returns `ids` (ids of IDs separated by generation) among its list elements, after `fam` but before `kinship_local`.

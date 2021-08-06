@@ -366,6 +366,18 @@ validate_fam <- function( fam, n, G ) {
     expect_true( all( fam$sex[ fam$id %in% fam$mat[ -(1:n[1]) ] ] == 2L ) ) # all mothers are female
 }
 
+validate_ids <- function( ids, n, G ) {
+    # construct expected `ids` from scratch
+    # this makes it easier
+    if ( length(n) == 1 )
+        n <- rep.int( n, G )
+    ids_exp <- vector( 'list', G )
+    for ( g in 1 : G ) {
+        ids_exp[[ g ]] <- paste0( g, '-', 1 : n[g] )
+    }
+    expect_equal( ids, ids_exp )
+}
+
 test_that( "sim_pedigree works", {
     G <- 3
     n <- 16
@@ -381,9 +393,11 @@ test_that( "sim_pedigree works", {
         data <- sim_pedigree( n, G, sex = rep_len( c(1L, 2L), n ) )
     )
     expect_true( is.list( data ) )
-    expect_equal( names( data ), c('fam', 'kinship_local') )
+    expect_equal( names( data ), c('fam', 'ids', 'kinship_local') )
     # check fam
     validate_fam( data$fam, n, G )
+    # check ids
+    validate_ids( data$ids, n, G )
     # check kinship_local
     names_kinship_exp <- paste0( G, '-', 1 : n )
     validate_kinship_proper( data$kinship_local, names_kinship_exp )
@@ -414,9 +428,11 @@ test_that( "sim_pedigree works", {
         data <- sim_pedigree( n, sex = rep_len( c(1L, 2L), n[1] ), full = TRUE )
     )
     expect_true( is.list( data ) )
-    expect_equal( names( data ), c('fam', 'kinship_local') )
+    expect_equal( names( data ), c('fam', 'ids', 'kinship_local') )
     # check fam
     validate_fam( data$fam, n, G )
+    # check ids
+    validate_ids( data$ids, n, G )
     # check kinship_local
     # this time it's a list because `full = TRUE`
     expect_true( is.list( data$kinship_local ) )
@@ -497,6 +513,7 @@ test_that( "draw_geno_fam works", {
     )
     # extract table including both generations
     fam <- data$fam
+    ids <- data$ids
     
     # cause errors on purpose
     # stuff missing
@@ -507,7 +524,7 @@ test_that( "draw_geno_fam works", {
     expect_error( draw_geno_fam( X, fam ) )
 
     # add colnames to X now
-    colnames( X ) <- fam$id[ 1 : n[1] ]
+    colnames( X ) <- ids[[ 1 ]]
 
     # successful run
     expect_silent(

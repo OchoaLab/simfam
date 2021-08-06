@@ -44,7 +44,7 @@ As these numbers may not exactly equal the target population size, random famili
 If \code{FALSE} (default), only the local kinship matrix of the last generation is returned.}
 }
 \value{
-A list with two named elements:
+A list with these named elements:
 \itemize{
 \item \code{fam}: the pedigree, a tibble in plink FAM format.  Following the column naming convention of the related \code{genio} package, it contains columns:
 \itemize{
@@ -55,6 +55,7 @@ A list with two named elements:
 \item \code{sex}: integers 1L (male) or 2L (female) which were drawn randomly; no other values occur in these outputs.
 \item \code{pheno}: Phenotype, here all 0 (missing value).
 }
+\item \code{ids}: a list of IDs for each generation (indexed in the list by generation).
 \item \code{kinship_local}: if \code{full = FALSE}, the local kinship matrix of the last generation, otherwise a list of local kinship matrices for every generation.
 }
 }
@@ -73,6 +74,9 @@ data <- sim_pedigree( n )
 # this is the FAM table defining the entire pedigree,
 # which is the most important piece of information desired!
 data$fam
+
+# the IDs separated by generation
+data$ids
 
 # bonus: the local kinship matrix of the final generation
 data$kinship_local

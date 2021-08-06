@@ -56,8 +56,9 @@ set.seed(1)
 
 # draw the random pedigree with those properties
 data <- sim_pedigree( n, G )
-# save two objects separately
+# save these objects separately
 fam <- data$fam
+ids <- data$ids
 kinship_local_G <- data$kinship_local
 ```
 The function returns a list with two objects.
@@ -78,7 +79,10 @@ Every individual has a unique index within the generation, that places them in a
 Founders are ordered as they are constructed, and children are ordered according to the mean index of their parents.
 Pairings occur randomly and iteratively: while there are available male-female pairs, a male is drawn at random from the available males and he is paired with the closest unpaired female that is not a close relative (by default they must be less related than 2nd cousins, i.e. have a pedigree kinship coefficient of less than `1/4^3`).
 
-The second element in the return list of `sim_pedigree` is the local (i.e., pedigree-based) kinship matrix of the individuals.
+The second element in the return list of `sim_pedigree` is `ids`, the list of IDs separated by generation.
+This is very handy as often we want to copy the names of the founders (`ids[[ 1 ]]`) to other objects, or want to filter data to contain the last generation only (`ids[[ G ]]`).
+
+The third element in the return list of `sim_pedigree` is the local (i.e., pedigree-based) kinship matrix of the individuals.
 This data can be recalculated from the `fam` table alone, so it is redundant, but it is calculated because the pairing algorithm requires it to avoid close relatives, so it is returned mostly because it's there already.
 By default, only individuals in the last generation are included in the matrix that is returned, so this is a `n * n` (here 15 x 15) matrix:
 ```{r}
@@ -124,11 +128,9 @@ If we are only interested in the last generation, then individuals from previous
 So for simplicity or efficiency, we may want to remove those individuals without descendants.
 We do this with the function `prune_fam`!
 ```{r, fig.width = 7, fig.height = 4, fig.align = 'center'}
-# first create list of IDs of interest
-# (last generation in this example)
-ids_G <- paste0( G, '-', 1:n )
 # replace original with pruned FAM table
-fam <- prune_fam( fam, ids_G )
+# containing only ancestors of last generation
+fam <- prune_fam( fam, ids[[ G ]] )
 # inspect
 fam
 # and plot pedigree
@@ -162,8 +164,7 @@ X_1 <- matrix(
     ncol = n
 )
 # `simfam` requires names for the founders on `X_1`, to validate identities and align
-ids_1 <- paste0( '1-', 1:n ) # match `fam` table's IDs
-colnames( X_1 ) <- ids_1
+colnames( X_1 ) <- ids[[ 1 ]]
 ```
 
 Before moving on, it's important to understand that these founders have a kinship matrix, albeit a trivial one, with zero kinship (unrelated) between individuals and a self-kinship of 1/2 (expected for outbred individuals).
@@ -222,7 +223,7 @@ Here we subset to keep the last generation, and compare not only to `kinship_fam
 ```{r, fig.width = 7, fig.height = 2.3, fig.align = 'center'}
 # indexes (really logicals) marking individuals in last generation,
 # to subset data (which is aligned with `fam`)
-indexes_G <- fam$id %in% ids_G
+indexes_G <- fam$id %in% ids[[ G ]]
 # estimate kinship
 kinship_local_est <- popkin( X )
 # plot them together for comparison
@@ -254,7 +255,7 @@ inbr_subpops <- c(0.2, 0.4, 0.6)
 # admixture proportions from 1D geography (founders)
 admix_proportions_1 <- admix_prop_1d_linear( n, K, sigma = 1 )
 # add founder names to `admix_proportions_1` (will propagate to other vars of interest)
-rownames( admix_proportions_1 ) <- paste0( '1-', 1:n ) # match `fam` table's IDs
+rownames( admix_proportions_1 ) <- ids[[ 1 ]]
 # also name subpopulations simply as S1, S2, S3
 colnames( admix_proportions_1 ) <- paste0( 'S', 1:K )
 
@@ -414,18 +415,15 @@ m <- 5000 # number of loci
 # draw the random pedigree with those properties.
 data <- sim_pedigree( n, G )
 fam <- data$fam
+ids <- data$ids
 # use this local kinship calculation in plot
 kinship_local_G <- data$kinship_local
 
-# useful IDs from first (founders) and last generations
-ids_1 <- paste0( 1, '-', 1:n )
-ids_G <- paste0( G, '-', 1:n )
-
 # prune pedigree to speed up simulations/etc
-fam <- prune_fam( fam, ids_G )
+fam <- prune_fam( fam, ids[[ G ]] )
 # indexes (really logicals) marking individuals in last generation,
 # to subset data (aligned with `fam`)
-indexes_G <- fam$id %in% ids_G
+indexes_G <- fam$id %in% ids[[ G ]]
 
 ### admixture model
 
@@ -435,7 +433,7 @@ inbr_subpops <- c(0.2, 0.4, 0.6)
 # admixture proportions from 1D geography (founders)
 admix_proportions_1 <- admix_prop_1d_linear( n, K, sigma = 1 )
 # add founder names to `admix_proportions_1` (will propagate to other vars of interest)
-rownames( admix_proportions_1 ) <- ids_1
+rownames( admix_proportions_1 ) <- ids[[ 1 ]]
 # also name subpopulations simply as S1, S2, S3
 colnames( admix_proportions_1 ) <- paste0( 'S', 1:K )
 
@@ -494,13 +492,10 @@ Lastly, let's determine how many individuals in each generation were ancestors o
 The bar plot below shows that, in this large simulation, most individuals in the first generation (founders), and in every subsequent generation, had descendants in the last generation.
 ```{r, fig.width = 7, fig.height = 4, fig.align = 'center'}
 # the IDs in `fam` (the pruned FAM table) contain the individuals of interest
-ids <- fam$id
 frac_per_gen <- vector('numeric', G)
 for ( g in 1 : G ) {
-    # look for this pattern for this generation
-    pattern <- paste0( g, '-' )
     # this is the desired fraction
-    frac_per_gen[g] <- sum( grepl( pattern, ids ) ) / n
+    frac_per_gen[g] <- sum( fam$id %in% ids[[ g ]] ) / n
 }
 # visualize as a barplot
 barplot(

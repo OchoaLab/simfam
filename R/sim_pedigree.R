@@ -26,7 +26,7 @@
 #' @param full If `TRUE`, part of the return object is a list of local kinship matrices for every generation.
 #' If `FALSE` (default), only the local kinship matrix of the last generation is returned.
 #'
-#' @return A list with two named elements:
+#' @return A list with these named elements:
 #' - `fam`: the pedigree, a tibble in plink FAM format.  Following the column naming convention of the related `genio` package, it contains columns:
 #'   - `fam`: Family ID, trivial "fam1" for all individuals
 #'   - `id`: Individual ID, in this case a code of format (in regular expression) "(\\d+)-(\\d+)" where the first integer is the generation number and the second integer is the index number (1 to `n[g]` for generation `g`).
@@ -34,6 +34,7 @@
 #'   - `mat`: Maternal ID.  Matches an `id` except for founders, which have mothers set to `NA`.
 #'   - `sex`: integers 1L (male) or 2L (female) which were drawn randomly; no other values occur in these outputs.
 #'   - `pheno`: Phenotype, here all 0 (missing value).
+#' - `ids`: a list of IDs for each generation (indexed in the list by generation).
 #' - `kinship_local`: if `full = FALSE`, the local kinship matrix of the last generation, otherwise a list of local kinship matrices for every generation.
 #'
 #' @examples
@@ -46,6 +47,9 @@
 #' # this is the FAM table defining the entire pedigree,
 #' # which is the most important piece of information desired!
 #' data$fam
+#'
+#' # the IDs separated by generation
+#' data$ids
 #' 
 #' # bonus: the local kinship matrix of the final generation
 #' data$kinship_local
@@ -97,6 +101,10 @@ sim_pedigree <- function(
         sex = sex,
         pheno = 0
     )
+    # create a list with IDs separated by generation, simplifies stuff a lot for users outside!
+    ids <- vector('list', G)
+    ids[[1]] <- fam$id # save this generation's IDs
+
     # code requires kinship matrices to have IDs as names, for maximum consistency with FAM table
     rownames( kinship_local ) <- fam$id
     colnames( kinship_local ) <- fam$id
@@ -136,6 +144,7 @@ sim_pedigree <- function(
             sex = draw_sex( n[g] ),
             pheno = 0
         )
+        ids[[g]] <- fam_g$id # save this generation's IDs
         
         # need a different fam for `kinship_fam` below that includes not just children but also their parents (treated as founders too though)
         # extract from master table, make it match current `kinship_local` (of parents) directly!
@@ -167,6 +176,7 @@ sim_pedigree <- function(
     return(
         list(
             fam = fam,
+            ids = ids,
             kinship_local = if ( full ) LG else kinship_local
         )
     )
