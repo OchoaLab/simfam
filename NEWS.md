@@ -38,3 +38,7 @@
 # simfam 0.0.7.9000 (2021-08-05)
 
 - Function `sim_pedigree` now returns `ids` (ids of IDs separated by generation) among its list elements, after `fam` but before `kinship_local`.
+
+# simfam 0.0.8.9000 (2021-08-05)
+
+- Added function `draw_geno_last_gen` for drawing genotypes for last generation only, of a pedigree with non-overlapping generations, saving lots of memory when the number of generations is large (behavior resembles original function, though internally it's a wrapper around the more general `draw_geno_fam`).

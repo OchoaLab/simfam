@@ -401,7 +401,8 @@ plot_popkin(
 
 Here we will simulate a much larger population size and a pedigree with a larger number of generations, to produce data that may better resemble real human data.
 We will make no attempt of visualize pedigrees or show individual labels.
-The whole code, redundant with our earlier analysis, is presented with minor explanations:
+The whole code, redundant with our earlier analysis, is presented with minor explanations.
+Note, however, use of the newly-introduced function `draw_geno_last_gen` to directly construct data for the last generation only, which also saves memory compared to the more general `draw_geno_fam` shown earlier.
 
 ```{r}
 library(simfam)
@@ -440,10 +441,8 @@ colnames( admix_proportions_1 ) <- paste0( 'S', 1:K )
 # draw genotypes from admixture model
 # admixed founders
 X_1 <- draw_all_admix( admix_proportions_1, inbr_subpops, m )$X
-# propagate through pedigree
-X <- draw_geno_fam( X_1, fam )
-# subset last generation
-X_G <- X[ , indexes_G ]
+# draw genotypes, returning last generation only
+X_G <- draw_geno_last_gen( X_1, fam, ids )
 # total kinship estimated from genotypes
 kinship_total_G_est <- popkin( X_G )
 

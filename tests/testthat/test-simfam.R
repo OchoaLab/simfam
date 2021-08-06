@@ -571,7 +571,53 @@ test_that( "draw_geno_fam works", {
         pat = c(NA, NA, 'a'),
         mat = c(NA, NA, 'd') # not "b"
     )
-    expect_error( draw_geno_fam( X, fam_g2 ) )
+    expect_error( draw_geno_fam( X, fam ) )
+})
+
+test_that( "draw_geno_last_gen works", {
+    # construct genotypes for parents
+    G <- 3
+    n <- c( 8, 9, 11 )
+    m <- 10
+    # random genotype data
+    X <- matrix( rbinom( m * n[1], 2, 0.5 ), nrow = m, ncol = n[1] )
+    
+    # and FAM table
+    # NOTE: had to set sex of founders to be exactly half male/female because otherwise they are set randomly, and there is a good chance (for small `n`) that they are all the same sex, in which case there's no solution!
+    expect_silent(
+        data <- sim_pedigree( n, sex = rep_len( c(1L, 2L), n[1] ) )
+    )
+    # extract table including both generations
+    fam <- data$fam
+    ids <- data$ids
+    
+    # cause errors on purpose
+    # stuff missing
+    expect_error( draw_geno_last_gen() )
+    # singletons
+    expect_error( draw_geno_last_gen( X = X ) )
+    expect_error( draw_geno_last_gen( fam = fam ) )
+    expect_error( draw_geno_last_gen( ids = ids ) )
+    # pairs
+    expect_error( draw_geno_last_gen( X = X, fam = fam ) )
+    expect_error( draw_geno_last_gen( X = X, ids = ids ) )
+    expect_error( draw_geno_last_gen( fam = fam, ids = ids ) )
+    # X is missing colnames!
+    expect_error( draw_geno_last_gen( X, fam, ids ) )
+
+    # add colnames to X now
+    colnames( X ) <- ids[[ 1 ]]
+
+    # successful run
+    expect_silent(
+        X_G <- draw_geno_last_gen( X, fam, ids )
+    )
+    expect_true( is.matrix( X_G ) )
+    expect_equal( ncol( X_G ), n[[G]] )
+    expect_equal( nrow( X_G ), m )
+    expect_true( !anyNA( X_G ) )
+    expect_true( all( X_G %in% 0L:2L ) )
+    expect_equal( colnames( X_G ), ids[[ G ]] )
 })
 
 test_that( "prune_fam works", {
