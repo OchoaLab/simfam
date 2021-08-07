@@ -1,11 +1,11 @@
 #' Draw random genotypes for last generation of a pedigree with known founder genotypes
 #'
-#' A wrapper around the more general [draw_geno_fam()], specialized to save memory when only the last generation is desired ([draw_geno_fam()] returns genotypes for the entire pedigree in a single matrix).
+#' A wrapper around the more general [geno_fam()], specialized to save memory when only the last generation is desired ([geno_fam()] returns genotypes for the entire pedigree in a single matrix).
 #' This function assumes that generations are non-overlapping (met by the output of [sim_pedigree()]), in which case each generation `g` can be drawn from generation `g-1` data only.
 #' That way, only two consecutive generations need be in memory at any given time.
 #' The partitioning of individuals into generations is given by the `ids` parameter (again matches the output of [sim_pedigree()]).
 #'
-#' @inheritParams draw_geno_fam
+#' @inheritParams geno_fam
 #' @param ids A list containing vectors of IDs for each generation.
 #' All these IDs must be present in `fam$id`.
 #' If IDs in `fam` and `ids` do not fully agree, the code processes the IDs in the intersection, which is helpful when `fam` is pruned but `ids` is the original (larger) set.
@@ -36,7 +36,7 @@
 #' rownames( X ) <- paste0( 'rs', 1:4 )
 #'
 #' # Draw the genotype matrix of the children
-#' X2 <- draw_geno_last_gen( X, fam, ids )
+#' X2 <- geno_last_gen( X, fam, ids )
 #' X2
 #' 
 #' @seealso
@@ -44,7 +44,7 @@
 #' <https://www.cog-genomics.org/plink/1.9/formats#fam>
 #'
 #' @export
-draw_geno_last_gen <- function( X, fam, ids, missing_vals = c('', 0) ) {
+geno_last_gen <- function( X, fam, ids, missing_vals = c('', 0) ) {
     # validate inputs
     if ( missing( X ) )
         stop( '`X` is required!' )
@@ -69,7 +69,7 @@ draw_geno_last_gen <- function( X, fam, ids, missing_vals = c('', 0) ) {
         fam_g$pat[ indexes1 ] <- NA
         fam_g$mat[ indexes1 ] <- NA
         # now run through this more general function!
-        X <- draw_geno_fam( X, fam_g, missing_vals )
+        X <- geno_fam( X, fam_g, missing_vals )
         # subset to extract current generation now, overwrite genotype matrix!
         X <- X[ , !indexes1, drop = FALSE ]
     }

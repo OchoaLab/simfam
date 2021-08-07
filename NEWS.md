@@ -58,3 +58,9 @@
 
 - Added function `admix_last_gen`. same deal as previous `*_last_gen` functions (less coding in practice, memory savings).
 - Fixed some minor typos in other functions, added `drop = FALSE` in some necessary cases.
+
+# simfam 0.0.12.9000 (2021-08-06)
+
+- Dropped redundant `draw_` prefix from genotype functions:
+  - `draw_geno_fam` -> `geno_fam`
+  - `draw_geno_last_gen` -> `geno_last_gen`

@@ -3,7 +3,7 @@
 #' Calculates a full kinship matrix (between all individuals in the provided pedigree FAM table) taking into account the relatedness of the founders as provided.
 #' Output agrees with [kinship2::kinship()] but only when founders are unrelated/outbred (in other words, that function does not allow relatedness between founders).
 #'
-#' @inheritParams draw_geno_fam
+#' @inheritParams geno_fam
 #' @param kinship The kinship matrix of the founders.
 #' This matrix must have column and row names that identify each founder (matching codes in `fam$id`).
 #' Individuals may be in a different order than `fam$id`.

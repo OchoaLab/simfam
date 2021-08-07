@@ -5,7 +5,7 @@ draw_allele <- function(x) {
     .Call(`_simfam_draw_allele`, x)
 }
 
-draw_geno_fam_cpp <- function(X_in, i_founder_in, i_founder_out, i_child, i_pat, i_mat) {
-    .Call(`_simfam_draw_geno_fam_cpp`, X_in, i_founder_in, i_founder_out, i_child, i_pat, i_mat)
+geno_fam_cpp <- function(X_in, i_founder_in, i_founder_out, i_child, i_pat, i_mat) {
+    .Call(`_simfam_geno_fam_cpp`, X_in, i_founder_in, i_founder_out, i_child, i_pat, i_mat)
 }
 

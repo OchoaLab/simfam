@@ -507,7 +507,7 @@ test_that( "draw_allele (cpp) works", {
     expect_error( draw_allele( 3 ) )
 })
 
-test_that( "draw_geno_fam works", {
+test_that( "geno_fam works", {
     # construct genotypes for parents
     G <- 2
     n <- c( 4, 5 )
@@ -526,18 +526,18 @@ test_that( "draw_geno_fam works", {
     
     # cause errors on purpose
     # stuff missing
-    expect_error( draw_geno_fam() )
-    expect_error( draw_geno_fam( X = X ) )
-    expect_error( draw_geno_fam( fam = fam ) )
+    expect_error( geno_fam() )
+    expect_error( geno_fam( X = X ) )
+    expect_error( geno_fam( fam = fam ) )
     # X is missing colnames!
-    expect_error( draw_geno_fam( X, fam ) )
+    expect_error( geno_fam( X, fam ) )
 
     # add colnames to X now
     colnames( X ) <- ids[[ 1 ]]
 
     # successful run
     expect_silent(
-        X_all <- draw_geno_fam( X, fam )
+        X_all <- geno_fam( X, fam )
     )
     expect_true( is.matrix( X_all ) )
     expect_equal( ncol( X_all ), sum(n) )
@@ -560,14 +560,14 @@ test_that( "draw_geno_fam works", {
         mat = c(NA, NA, 'b')
     )
     expect_silent(
-        X_all <- draw_geno_fam( X, fam )
+        X_all <- geno_fam( X, fam )
     )
     expect_equal( X_all, X_all_exp )
 
     # same but reorder parents in input
     X <- X[ , 2:1 ]
     expect_silent(
-        X_all <- draw_geno_fam( X, fam )
+        X_all <- geno_fam( X, fam )
     )
     expect_equal( X_all, X_all_exp )
 
@@ -578,7 +578,7 @@ test_that( "draw_geno_fam works", {
     X_all_exp <- cbind( X, x_exp )
     colnames( X_all_exp ) <- letters[1:3]
     expect_silent(
-        X_all <- draw_geno_fam( X, fam )
+        X_all <- geno_fam( X, fam )
     )
     expect_equal( X_all, X_all_exp )
 
@@ -588,10 +588,10 @@ test_that( "draw_geno_fam works", {
         pat = c(NA, NA, 'a'),
         mat = c(NA, NA, 'd') # not "b"
     )
-    expect_error( draw_geno_fam( X, fam ) )
+    expect_error( geno_fam( X, fam ) )
 })
 
-test_that( "draw_geno_last_gen works", {
+test_that( "geno_last_gen works", {
     # construct genotypes for parents
     G <- 3
     n <- c( 8, 9, 11 )
@@ -610,24 +610,24 @@ test_that( "draw_geno_last_gen works", {
     
     # cause errors on purpose
     # stuff missing
-    expect_error( draw_geno_last_gen() )
+    expect_error( geno_last_gen() )
     # singletons
-    expect_error( draw_geno_last_gen( X = X ) )
-    expect_error( draw_geno_last_gen( fam = fam ) )
-    expect_error( draw_geno_last_gen( ids = ids ) )
+    expect_error( geno_last_gen( X = X ) )
+    expect_error( geno_last_gen( fam = fam ) )
+    expect_error( geno_last_gen( ids = ids ) )
     # pairs
-    expect_error( draw_geno_last_gen( X = X, fam = fam ) )
-    expect_error( draw_geno_last_gen( X = X, ids = ids ) )
-    expect_error( draw_geno_last_gen( fam = fam, ids = ids ) )
+    expect_error( geno_last_gen( X = X, fam = fam ) )
+    expect_error( geno_last_gen( X = X, ids = ids ) )
+    expect_error( geno_last_gen( fam = fam, ids = ids ) )
     # X is missing colnames!
-    expect_error( draw_geno_last_gen( X, fam, ids ) )
+    expect_error( geno_last_gen( X, fam, ids ) )
 
     # add colnames to X now
     colnames( X ) <- ids[[ 1 ]]
 
     # successful run
     expect_silent(
-        X_G <- draw_geno_last_gen( X, fam, ids )
+        X_G <- geno_last_gen( X, fam, ids )
     )
     expect_true( is.matrix( X_G ) )
     expect_equal( ncol( X_G ), n[[G]] )

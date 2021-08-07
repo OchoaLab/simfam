@@ -55,11 +55,11 @@ fam <- prune_fam( fam, ids[[G]] )
 
 Draw genotypes `X` through pedigree, starting from genotypes of founders (`X_1`):
 ```r
-X <- draw_geno_fam( X_1, fam )
+X <- geno_fam( X_1, fam )
 # Version for last generation only, which uses less memory.
 # (`ids` must be as from `sim_pedigree`,
 # a list partitioning non-overlapping generations)
-X_G <- draw_geno_last_gen( X_1, fam, ids )
+X_G <- geno_last_gen( X_1, fam, ids )
 ```
 
 Calculate kinship through pedigree, starting from kinship of founders (`kinship_1`):

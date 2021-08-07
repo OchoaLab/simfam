@@ -50,9 +50,9 @@ rownames( admix_proportions_1 ) <- ids[[ 1 ]] # need IDs to match founders
 # now construct/draw/propagate information across the pedigree!
 
 # 1) draw genotypes through pedigree, starting from founders!
-X <- draw_geno_fam( X_1, fam )
+X <- geno_fam( X_1, fam )
 # version for last generation only, which uses less memory
-X_G <- draw_geno_last_gen( X_1, fam, ids )
+X_G <- geno_last_gen( X_1, fam, ids )
 
 # 2) calculate kinship through pedigree, starting from kinship of founders!
 kinship <- kinship_fam( kinship_1, fam )

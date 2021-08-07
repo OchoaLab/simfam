@@ -31,7 +31,7 @@ int draw_allele( int x ) {
 }
 
 // [[Rcpp::export]]
-IntegerMatrix draw_geno_fam_cpp(IntegerMatrix X_in, IntegerVector i_founder_in, IntegerVector i_founder_out, IntegerVector i_child, IntegerVector i_pat, IntegerVector i_mat) {
+IntegerMatrix geno_fam_cpp(IntegerMatrix X_in, IntegerVector i_founder_in, IntegerVector i_founder_out, IntegerVector i_child, IntegerVector i_pat, IntegerVector i_mat) {
   // gather some important dimensions
   int m_loci = X_in.nrow();
   int n_founder = i_founder_in.length();

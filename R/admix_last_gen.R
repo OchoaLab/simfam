@@ -6,7 +6,7 @@
 #' The partitioning of individuals into generations is given by the `ids` parameter (again matches the output of [sim_pedigree()]).
 #'
 #' @inheritParams admix_fam
-#' @inheritParams draw_geno_last_gen
+#' @inheritParams geno_last_gen
 #'
 #' @return The admixture proportions matrix of the last generation (the intersection of `ids[ length(ids) ]` and `fam$id`).
 #' The rows of this matrix are last-generation individuals in the order that they appear in `fam$id`.

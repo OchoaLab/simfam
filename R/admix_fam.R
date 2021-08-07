@@ -2,7 +2,7 @@
 #'
 #' Calculates a full admixture proportions matrix (for all individuals in the provided pedigree FAM table) starting from the admixture proportions of the founders as provided.
 #'
-#' @inheritParams draw_geno_fam
+#' @inheritParams geno_fam
 #' @param admix The admixture proportions matrix of the founders (individuals along rows and ancestries along columns).
 #' This matrix must have row names that identify each founder (matching codes in `fam$id`).
 #' Individuals may be in a different order than `fam$id`.

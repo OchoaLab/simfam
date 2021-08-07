@@ -41,7 +41,7 @@
 #' rownames( X ) <- paste0( 'rs', 1:4 )
 #'
 #' # Draw the full genotype matrix
-#' X_all <- draw_geno_fam( X, fam )
+#' X_all <- geno_fam( X, fam )
 #' 
 #' # This is a 4x3 matrix with column names matching fam$id.
 #' # The parent submatrix equals the input (reordered),
@@ -53,7 +53,7 @@
 #' <https://www.cog-genomics.org/plink/1.9/formats#fam>
 #'
 #' @export
-draw_geno_fam <- function( X, fam, missing_vals = c('', 0) ) {
+geno_fam <- function( X, fam, missing_vals = c('', 0) ) {
     # validate inputs
     if ( missing( X ) )
         stop( '`X` is required!' )
@@ -75,7 +75,7 @@ draw_geno_fam <- function( X, fam, missing_vals = c('', 0) ) {
     i_mat <- fam$mati[ !fam$founder ] - 1
     
     # create the output matrix using C++!
-    X_fam <- draw_geno_fam_cpp( X, indexes, i_founder_out, i_child, i_pat, i_mat )
+    X_fam <- geno_fam_cpp( X, indexes, i_founder_out, i_child, i_pat, i_mat )
     
     # copy names of individuals and loci
     colnames( X_fam ) <- fam$id

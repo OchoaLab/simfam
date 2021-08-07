@@ -2,9 +2,9 @@
 
 export(admix_fam)
 export(admix_last_gen)
-export(draw_geno_fam)
-export(draw_geno_last_gen)
 export(draw_sex)
+export(geno_fam)
+export(geno_last_gen)
 export(kinship_fam)
 export(kinship_last_gen)
 export(prune_fam)

@@ -191,12 +191,12 @@ plot_popkin(
 )
 ```
 
-Now we draw genotypes across the pedigree using `draw_geno_fam`!
+Now we draw genotypes across the pedigree using `geno_fam`!
 Since we have genotypes of the founders, we can simulate the random inheritance of alleles to every descendant, which produces the correct pedigree-based kinship/covariance structure at every locus.
 However, this code draws loci independently from each other (there's no LD).
 We also construct the total expected kinship across this pedigree with a similar function, `kinship_fam`.
 ```{r}
-X <- draw_geno_fam( X_1, fam )
+X <- geno_fam( X_1, fam )
 # expected kinship of entire pruned pedigree, starting from true kinship of founders.
 # Called "local" kinship because it ignores the ancestral population structure (will be reused)
 # NOTE: agrees with `kinship2::kinship( fam )`, but only because founders are unstructured
@@ -285,7 +285,7 @@ Note that, unlike the corresponding demonstration in the `bnpsd` package, here t
 
 We draw genotypes across the pedigree the same way as before:
 ```{r}
-X <- draw_geno_fam( X_1, fam )
+X <- geno_fam( X_1, fam )
 # expected kinship of entire pruned pedigree, starting from true kinship of founders
 # NOTE: DOESN'T agree with `kinship2::kinship( fam )` anymore because founders are structured!
 kinship_total <- kinship_fam( kinship_1, fam )
@@ -402,7 +402,7 @@ plot_popkin(
 Here we will simulate a much larger population size and a pedigree with a larger number of generations, to produce data that may better resemble real human data.
 We will make no attempt of visualize pedigrees or show individual labels.
 The whole code, redundant with our earlier analysis, is presented with minor explanations.
-Note, however, use of the newly-introduced functions `draw_geno_last_gen`, `kinship_last_gen`, and `admix_last_gen` to directly construct data for the last generation only, which also saves memory compared to the more general `draw_geno_fam`, `kinship_fam`, and `admix_fam` shown earlier.
+Note, however, use of the newly-introduced functions `geno_last_gen`, `kinship_last_gen`, and `admix_last_gen` to directly construct data for the last generation only, which also saves memory compared to the more general `geno_fam`, `kinship_fam`, and `admix_fam` shown earlier.
 
 ```{r}
 library(simfam)
@@ -439,7 +439,7 @@ colnames( admix_proportions_1 ) <- paste0( 'S', 1:K )
 # admixed founders
 X_1 <- draw_all_admix( admix_proportions_1, inbr_subpops, m )$X
 # draw genotypes, returning last generation only
-X_G <- draw_geno_last_gen( X_1, fam, ids )
+X_G <- geno_last_gen( X_1, fam, ids )
 # total kinship estimated from genotypes
 kinship_total_G_est <- popkin( X_G )
 

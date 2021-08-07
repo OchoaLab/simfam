@@ -21,9 +21,9 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
-// draw_geno_fam_cpp
-IntegerMatrix draw_geno_fam_cpp(IntegerMatrix X_in, IntegerVector i_founder_in, IntegerVector i_founder_out, IntegerVector i_child, IntegerVector i_pat, IntegerVector i_mat);
-RcppExport SEXP _simfam_draw_geno_fam_cpp(SEXP X_inSEXP, SEXP i_founder_inSEXP, SEXP i_founder_outSEXP, SEXP i_childSEXP, SEXP i_patSEXP, SEXP i_matSEXP) {
+// geno_fam_cpp
+IntegerMatrix geno_fam_cpp(IntegerMatrix X_in, IntegerVector i_founder_in, IntegerVector i_founder_out, IntegerVector i_child, IntegerVector i_pat, IntegerVector i_mat);
+RcppExport SEXP _simfam_geno_fam_cpp(SEXP X_inSEXP, SEXP i_founder_inSEXP, SEXP i_founder_outSEXP, SEXP i_childSEXP, SEXP i_patSEXP, SEXP i_matSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -33,14 +33,14 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< IntegerVector >::type i_child(i_childSEXP);
     Rcpp::traits::input_parameter< IntegerVector >::type i_pat(i_patSEXP);
     Rcpp::traits::input_parameter< IntegerVector >::type i_mat(i_matSEXP);
-    rcpp_result_gen = Rcpp::wrap(draw_geno_fam_cpp(X_in, i_founder_in, i_founder_out, i_child, i_pat, i_mat));
+    rcpp_result_gen = Rcpp::wrap(geno_fam_cpp(X_in, i_founder_in, i_founder_out, i_child, i_pat, i_mat));
     return rcpp_result_gen;
 END_RCPP
 }
 
 static const R_CallMethodDef CallEntries[] = {
     {"_simfam_draw_allele", (DL_FUNC) &_simfam_draw_allele, 1},
-    {"_simfam_draw_geno_fam_cpp", (DL_FUNC) &_simfam_draw_geno_fam_cpp, 6},
+    {"_simfam_geno_fam_cpp", (DL_FUNC) &_simfam_geno_fam_cpp, 6},
     {NULL, NULL, 0}
 };
 
