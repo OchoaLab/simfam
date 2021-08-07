@@ -715,3 +715,35 @@ test_that( "admix_fam works", {
     )
     expect_equal( admix2, admix2_exp )
 })
+
+test_that( "admix_last_gen works", {
+    # toy example, with interspersed founders and reordered founders in `admix`
+    fam <- tibble(
+        id  = c('a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'),
+        pat = c( NA,  NA, 'a',  NA,  NA, 'e', 'f', 'f'),
+        mat = c( NA,  NA, 'b',  NA,  NA, 'd', 'c', 'c')
+    )
+    ids <- list( c('a', 'b', 'd', 'e'), c('c', 'f'), c('g', 'h') )
+    k_subpops <- 3
+    names_subpops <- paste0( 'S', 1:3 )
+    admix <- matrix(
+        c(
+            1.0, 0.0, 0.0, # a
+            0.0, 1.0, 0.0, # b
+            0.0, 0.0, 1.0, # e
+            0.2, 0.3, 0.5  # d
+        ),
+        byrow = TRUE,
+        ncol = k_subpops
+    )
+    rownames( admix ) <- c('a', 'b', 'e', 'd') # scrambled from FAM
+    # expected output
+    admix_G_exp <- c( 0.3, 0.325, 0.375 ) # g,h
+    admix_G_exp <- rbind( admix_G_exp, admix_G_exp ) # duplicate sibs
+    rownames( admix_G_exp ) <- ids[[ 3 ]]
+    # a succcessful run
+    expect_silent(
+        admix_G <- admix_last_gen( admix, fam, ids )
+    )
+    expect_equal( admix_G, admix_G_exp )
+})
