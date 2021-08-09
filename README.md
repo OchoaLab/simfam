@@ -1,7 +1,7 @@
 # simfam
 
 The goal of simfam is to simulate and model families with founders drawn from a structured population.
-The main function simulates a random pedigree for many generations with realistic reatures.
+The main function simulates a random pedigree for many generations with realistic features.
 Additional functions calculate kinship matrices, admixture matrices, and draw random genotypes across arbitrary pedigree structures starting from the corresponding founder values.
 
 ## Installation
@@ -37,7 +37,8 @@ library(simfam)
 Simulate a random pedigree with a desired number of individuals per generation `n` and a number of generations `G`:
 ```r
 data <- sim_pedigree( n, G )
-# creates a plink-formatted FAM table (describes pedigree, most important!)
+# creates a plink-formatted FAM table
+# (describes pedigree, most important!)
 fam <- data$fam
 # lists of IDs split by generation
 ids <- data$ids
@@ -46,7 +47,7 @@ kinship_local_G <- data$kinship_local
 ```
 
 The basics of encoding a pedigree in a `fam` table (a data.frame) is that every individual in the pedigree is a row, column `id` identifies the individual with a unique number or string, columns `pat` and `mat` identify the parents of the individual (who are themselves earlier rows), and `sex` encodes the sex of the individual numerically (1=male, 2=female).
-The following functions work wirh arbitrary pedigrees/`fam` data.frames:
+The following functions work with arbitrary pedigrees/`fam` data.frames:
 
 Prune a given `fam`, to speed up simulations/etc, by removing individuals without descendants among set of individuals `ids` (in this example, the last generation from the output of `sim_pedigree`):
 ```r

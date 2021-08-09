@@ -66,6 +66,14 @@ admix_proportions_G <- admix_last_gen( admix_proportions_1, fam, ids )
 
 
 }
+\seealso{
+Useful links:
+\itemize{
+  \item \url{https://github.com/OchoaLab/simfam}
+  \item Report bugs at \url{https://github.com/OchoaLab/simfam/issues}
+}
+
+}
 \author{
 \strong{Maintainer}: Alejandro Ochoa \email{alejandro.ochoa@duke.edu} (\href{https://orcid.org/0000-0003-4928-3403}{ORCID})
 

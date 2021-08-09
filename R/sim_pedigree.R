@@ -1,6 +1,6 @@
 #' Construct a random pedigree
 #'
-#' Specify the number of individuals per generation, and some other optional parameters, and a single pedigree with those properties will be simulated, where close relatives are never paired, sex is drawn randomly per individual and pairings are stricty across opposite-sex individuals, and otherwise closest individuals (on an underlying 1D geography given by their index) are paired in a random order.
+#' Specify the number of individuals per generation, and some other optional parameters, and a single pedigree with those properties will be simulated, where close relatives are never paired, sex is drawn randomly per individual and pairings are strictly across opposite-sex individuals, and otherwise closest individuals (on an underlying 1D geography given by their index) are paired in a random order.
 #' Pairs are reordered based on the average of their indexes, where their children are placed (determines their indexes in the 1D geography).
 #' The procedure may leave some individuals unpaired in the next generation, and family sizes vary randomly (with a fixed minimum family size) to achieve the desired population size in each generation.
 #'
@@ -18,7 +18,7 @@
 #' This "local" kinship is the basis for all kinship calculations used to decide on close relative avoidance.
 #' The goal is to make a decision to not pair close relatives based on the pedigree only (and not based on population structure, which otherwise increases all kinship values), so the default value is appropriate.
 #' @param cutoff Local kinship values strictly less than `cutoff` are required for pairs.
-#' The default value of `1/4^3` corresponds to 2nd cousins, so those and closer relatives are forbidden pairs (but a 3rd cousin pair is allowed).
+#' The default value of `1/4^3` corresponds to second cousins, so those and closer relatives are forbidden pairs (but a third cousin pair is allowed).
 #' @param children_min The minimum number of children per family.
 #' Must be 0 or larger, but not exceed the average number of children per family in each generation (varies depending on how many individuals were left unpaired, but this upper limit is approximately `2 * n[i] / n[i-1]` for generation `i`).
 #' The number of children for each given family is first chosen as `children_min` plus a Poisson random variable with parameter equal to the mean number of children per family needed to achieve the desired population size (`n`) minus `children_min`.
