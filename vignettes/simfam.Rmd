@@ -336,7 +336,7 @@ library(RColorBrewer)
 # colors for independent subpopulations
 col_subpops <- brewer.pal( K, "Paired" )
 # shrink default margins
-par(mar = c(4, 4, 0.5, 0) + 0.2)
+par_orig <- par(mar = c(4, 4, 0.5, 0) + 0.2)
 barplot(
     t( admix_proportions ),
     col = col_subpops,
@@ -348,6 +348,7 @@ barplot(
     las = 2
 )
 mtext('Individuals', side = 1, line = 3)
+par( par_orig ) # reset `par`
 ```
 The above figure shows that admixture proportions in the first generation vary a lot: for example, 1-1 has a large proportion of S1 ancestry, while 1-14 has mostly S3 instead.
 In contrast, in the third generation ancestry is much more averaged out, with fewer extremes.

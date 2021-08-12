@@ -71,3 +71,10 @@
 - Changes prepping for first CRAN submission
 - Corrected spelling errors
 - Clarified bnpsd dependence (older versions don't propagate names, which the vignette relies upon).
+
+# simfam 1.0.1 (2021-08-12)
+
+- More changes prepping for CRAN submission (based on feedback from another new package).
+- Added bioRxiv paper reference to description.
+- Reset `par()` in vignette examples.
+
