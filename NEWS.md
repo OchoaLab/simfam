@@ -78,3 +78,12 @@
 - Added bioRxiv paper reference to description.
 - Reset `par()` in vignette examples.
 
+# simfam 1.0.2 (2021-08-31)
+
+- First CRAN submission!
+- README
+  - Uncommented CRAN installation instructions
+  - Corrected GitHub installation instructions to use `build_vignettes = TRUE` instead of `build_opts = c()` (which did not build vignettes anymore).
+- Function `draw_couples_nearest` removed unnecessary checks (redundant with unit tests)
+- Added file `cran-comments.md`.
+- DESCRIPTION corrected title for proper title case

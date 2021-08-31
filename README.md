@@ -6,18 +6,16 @@ Additional functions calculate kinship matrices, admixture matrices, and draw ra
 
 ## Installation
 
-<!--
 You can install the released version of simfam from [CRAN](https://CRAN.R-project.org) with:
 ``` r
 install.packages("simfam")
 ```
---->
 
 The current development version can be installed from the GitHub repository using `devtools`:
 ```R
 install.packages("devtools") # if needed
 library(devtools)
-install_github('OchoaLab/simfam', build_opts = c())
+install_github('OchoaLab/simfam', build_vignettes = TRUE)
 ```
 
 You can see the package vignette, which has more detailed documentation and examples, by typing this into your R session:
