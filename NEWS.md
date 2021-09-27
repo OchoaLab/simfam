@@ -87,3 +87,9 @@
 - Function `draw_couples_nearest` removed unnecessary checks (redundant with unit tests)
 - Added file `cran-comments.md`.
 - DESCRIPTION corrected title for proper title case
+
+# simfam 1.0.3 (2021-09-27)
+
+- 2nd CRAN submission!
+- Tests: adjusted sample sizes in an internal unit test to make a particular `sim_pedigree` error rate ~100x less likely than before (error due to not being able to pair everybody; previously, this unlikely error expected 0.4% of the time actually occurred on CRAN, now it is expected 0.002% of the time).
+

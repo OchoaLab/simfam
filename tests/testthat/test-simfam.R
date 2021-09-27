@@ -594,7 +594,7 @@ test_that( "geno_fam works", {
 test_that( "geno_last_gen works", {
     # construct genotypes for parents
     G <- 3
-    n <- c( 8, 9, 11 )
+    n <- c( 14, 15, 17 )
     m <- 10
     # random genotype data
     X <- matrix( rbinom( m * n[1], 2, 0.5 ), nrow = m, ncol = n[1] )
