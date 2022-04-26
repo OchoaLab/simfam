@@ -93,3 +93,11 @@
 - 2nd CRAN submission!
 - Tests: adjusted sample sizes in an internal unit test to make a particular `sim_pedigree` error rate ~100x less likely than before (error due to not being able to pair everybody; previously, this unlikely error expected 0.4% of the time actually occurred on CRAN, now it is expected 0.002% of the time).
 
+# simfam 1.1.0.9000 (2022-04-26)
+
+First set of updates for simulating with recombination!
+
+- Updated reference DOI to newest preprint
+- Added functions `recomb_fam` and `recomb_init_founders` for simulating recombination breaks for a pedigree!
+  - These breaks are on genetic distance only so far.
+  - Other nice features (drawing genotypes, calculating kinship, or local ancestry) are not yet present but they are planned.
