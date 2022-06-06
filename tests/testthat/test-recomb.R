@@ -290,3 +290,77 @@ test_that( "recomb_fam works", {
     # full validation!
     validate_inds( inds, fam$id, lengs, ancs_set )
 })
+
+test_that( "recomb_map_fix_ends_chr works", {
+    # define an incomplete map, toy example only
+    # because of default window size, ensure there's at least 10 Mb at each end!
+    map_in <- tibble(
+        pos  = c( 4000L, 11000000L, 80000000L, 100000000L ),
+        posg = c(     0,        10,        70,         80 )
+    )
+    pos_length <- 101000000L
+    # apply code!
+    expect_silent( 
+        map_out <- recomb_map_fix_ends_chr( map_in, pos_length )
+    )
+    # make sure it looks good!
+    expect_true( is.data.frame( map_out ) )
+    expect_equal( names( map_out ), c('pos', 'posg') )
+    expect_true( is.integer( map_out$pos ) )
+    expect_true( is.numeric( map_out$posg ) )
+    # positions are non-negative, strictly increasing, fit in chr length
+    # but actually have strict requirements for ends, particularly for $pos
+    # pos
+    expect_equal( map_out$pos[1], 1L )
+    expect_true( all( diff( map_out$pos ) > 0 ) )
+    expect_equal( map_out$pos[ nrow( map_out ) ], pos_length )
+    # posg
+    expect_equal( map_out$posg[1], 0 )
+    expect_true( all( diff( map_out$posg ) >= 0 ) ) # these have ties in real data
+    # no expectation for end of posg
+})
+
+test_that( "recomb_map_simplify_chr works", {
+    # create a simple case where all data falls on the perfect line
+    # (1Mb to 10Mb)
+    map_in <- tibble( pos = ( 1L : 10L ) * 1000000L )
+    # use average recombination rate (rule of thumb)
+    map_in$posg <- map_in$pos * 1e-6
+    # apply!
+    expect_silent( 
+        map_out <- recomb_map_simplify_chr( map_in )
+    )
+    # expect the output to be just the first and last rows
+    # (good test for handling of ties too, since all errors are zero at least theoretically!)
+    expect_equal( map_out, map_in[ c(1L, 10L), ] )
+
+    # a more random example, and also calculate actual final errors and make sure they are controlled
+    # make sure this is the same in function and in validation
+    tol <- 1e-6 / 2
+    # 1Mb to 100Mb in 1Mb increments, and values will be approximately 1e-6 but random (sorted though)
+    # this weight reduces noise further, turns out otherwise I wasn't eliminating anything under the desired tolerance.  In this case the weight equal to the tolerance gives good results (only about 1/3 of positions are not eliminated!)
+    w <- tol
+    map_in <- tibble(
+        pos = ( 1L : 100L ) * 1000000L,
+        posg = ( ( 1 - w ) * ( 1L : 100L ) + w * 100 * sort( runif( 100L ) ) )
+    )
+    # apply!
+    expect_silent( 
+        map_out <- recomb_map_simplify_chr( map_in, tol = tol )
+    )
+    # results are random but can expect dimensions to be less or equal
+    expect_true( nrow( map_out ) <= nrow( map_in ) )
+    #message( nrow( map_in ), ' -> ', nrow( map_out ) ) # debugging, making sure problem is non-trivial enough
+    # estimate all original positions using new map, to confirm error is small as expected
+    pos <- map_in$pos
+    posg <- map_in$posg
+    expect_silent(
+        posg_est <- stats::approx( map_out$pos, map_out$posg, pos )$y
+    )
+    # make sure there are no NAs (all should be interpolations)
+    expect_true( !anyNA( posg_est ) )
+    # now actually look at errors
+    # a few errors are greater than the tolerance but not by more than 2x
+    expect_true( all( abs( posg_est - posg ) < 2 * tol ) )
+    
+})

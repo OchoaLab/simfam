@@ -101,3 +101,10 @@ First set of updates for simulating with recombination!
 - Added functions `recomb_fam` and `recomb_init_founders` for simulating recombination breaks for a pedigree!
   - These breaks are on genetic distance only so far.
   - Other nice features (drawing genotypes, calculating kinship, or local ancestry) are not yet present but they are planned.
+
+# simfam 1.1.1.9000 (2022-06-06)
+
+- Added simplified human genome recombination maps (data) and the functions used to create them.
+  - Added function `recomb_map_fix_ends_chr` to shift and extrapolate genetic map to chromosome ends.
+  - Added function `recomb_map_simplify_chr` to simplify genetic maps by removing rows that can be interpolated to within a desired error.
+  - Added and documented data `recomb_map_hg38` and `recomb_map_hg37`, which was created from existing maps processed by the above two functions.
