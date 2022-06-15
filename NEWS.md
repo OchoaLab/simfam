@@ -108,3 +108,9 @@ First set of updates for simulating with recombination!
   - Added function `recomb_map_fix_ends_chr` to shift and extrapolate genetic map to chromosome ends.
   - Added function `recomb_map_simplify_chr` to simplify genetic maps by removing rows that can be interpolated to within a desired error.
   - Added and documented data `recomb_map_hg38` and `recomb_map_hg37`, which was created from existing maps processed by the above two functions.
+
+# simfam 1.1.2.9000 (2022-06-15)
+
+- Functions `recomb_fam` and `recomb_init_founders` slight change in input and output formats: each chromosome list now has column "posg" indicating end of recombination block in genetic position (the column used to be called "end"; changed to match notation in recombination map, where "pos" is position in base pairs and "posg" is in genetic distance).
+- Function `recomb_init_founders` argument `lengs` may now be a recombination map for simplicity, from which the desired chromosome lengths are extracted, rather than having to extract them in a separate step.
+- Added function `recomb_map_inds` to map recombination breaks from genetic positions to base pair coordinates.

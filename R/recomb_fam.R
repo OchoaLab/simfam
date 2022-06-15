@@ -8,7 +8,7 @@
 #' @inheritParams geno_fam
 #' @param founders The named list of founders with their chromosomes.
 #' For unstructured founders, initialize with [recomb_init_founders()].
-#' Each element of this list is a diploid individual, which is a list with two haploid individuals named "pat" and "mat", each of which is a list of chromosomes (always identified by number, but may also be named arbitrarily), each of which is a data.frame/tibble with implicit ranges ("end" coordinates in cM; start is the end of the previous block, zero for the first block) and ancestors "anc" as strings.
+#' Each element of this list is a diploid individual, which is a list with two haploid individuals named "pat" and "mat", each of which is a list of chromosomes (always identified by number, but may also be named arbitrarily), each of which is a data.frame/tibble with implicit ranges ("posg" is end coordinates in cM; start is the end of the previous block, zero for the first block) and ancestors "anc" as strings.
 #' For true founders each chromosome may be trivial (each chromosome is a single block with ID equal to itself but distinguishing maternal from paternal copy), but input itself can be recombined (for iterating).
 #' This list must have names that identify each founder (matching codes in `fam$id`).
 #' Individuals may be in a different order than `fam$id`.

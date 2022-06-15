@@ -2,29 +2,43 @@ library(tibble)
 
 # validates structure of a single chromosome (tibble)
 # flexible for cases where breaks are known and cases where they aren't
-validate_chr <- function( chr, leng, breaks = NULL, ancs1 = NULL, ancs2 = NULL, ancs_set = NULL ) {
+validate_chr <- function( chr, leng, breaks = NULL, ancs1 = NULL, ancs2 = NULL, ancs_set = NULL, mapped = FALSE ) {
+    # decide on which columns are expected
+    chr_cols <- c( 'posg', 'anc' )
+    # if mapped, "pos" will be added and be first
+    if ( mapped )
+        chr_cols <- c( 'pos', chr_cols )
+    
     # simple tests
     expect_true( is.data.frame( chr ) )
-    expect_equal( names( chr ), c('end', 'anc') )
+    expect_equal( names( chr ), chr_cols )
+    expect_true( is.numeric( chr$posg ) )
     
     # always test total length, other basic properties
     # in our tests, we only know number of rows when we have all breaks, so those go together
     if ( is.null( breaks ) ) {
         # there's always at least one row
         expect_true( nrow( chr ) > 0 )
-        # end are non-negative, strictly increasing, fit in chr length
-        expect_true( all( chr$end > 0 ) )
-        expect_true( all( diff( chr$end ) > 0 ) )
-        expect_true( all( chr$end <= leng ) )
+        # posg are non-negative, strictly increasing, fit in chr length
+        expect_true( all( chr$posg > 0 ) )
+        expect_true( all( diff( chr$posg ) > 0 ) )
+        expect_true( all( chr$posg <= leng ) )
         # last value should always be length
-        expect_true( chr$end[ nrow( chr ) ] == leng )
+        expect_true( chr$posg[ nrow( chr ) ] == leng )
+
+        if ( mapped ) {
+            # repeat tests on basepair position "pos"
+            expect_true( is.integer( chr$pos ) )
+            expect_true( all( chr$pos >= 1L ) )
+            expect_true( all( diff( chr$pos ) > 0L ) )
+        }
     } else {
         # some expected values
         n_chunks <- length( breaks ) + 1
         # require exact number of rows
         expect_equal( nrow( chr ), n_chunks )
         # require exact breaks
-        expect_equal( chr$end, c( breaks, leng ) )
+        expect_equal( chr$posg, c( breaks, leng ) )
     }
 
     # test anc labels
@@ -46,31 +60,31 @@ validate_chr <- function( chr, leng, breaks = NULL, ancs1 = NULL, ancs2 = NULL, 
 
 # validate structure of a halploid individual (all chromosomes)
 # at this level breaks will be unknown, so ancs are also unknown in precision (but set can be known)
-validate_hap <- function( hap, lengs, ancs_set = NULL ) {
+validate_hap <- function( hap, lengs, ancs_set = NULL, mapped = FALSE ) {
     n_chr <- length( lengs )
     expect_true( is.list( hap ) )
     expect_equal( length( hap ), n_chr )
     # test each chromosome now
     for ( chr in 1 : n_chr ) {
         # number of breaks is unknown, but just test broader expectations
-        validate_chr( hap[[ chr ]], lengs[ chr ], ancs_set = ancs_set )
+        validate_chr( hap[[ chr ]], lengs[ chr ], ancs_set = ancs_set, mapped = mapped )
     }
 }
 
 # validate structure of a diploid individual (both sets of chromosomes)
-validate_ind <- function( ind, lengs, ancs_set = NULL ) {
+validate_ind <- function( ind, lengs, ancs_set = NULL, mapped = FALSE ) {
     expect_true( is.list( ind ) )
     expect_equal( names( ind ), c('pat', 'mat') )
-    validate_hap( ind$pat, lengs, ancs_set = ancs_set )
-    validate_hap( ind$mat, lengs, ancs_set = ancs_set )
+    validate_hap( ind$pat, lengs, ancs_set = ancs_set, mapped = mapped )
+    validate_hap( ind$mat, lengs, ancs_set = ancs_set, mapped = mapped )
 }
 
 # validate structure of a list of diploid individuals
-validate_inds <- function( inds, ids, lengs, ancs_set = NULL ) {
+validate_inds <- function( inds, ids, lengs, ancs_set = NULL, mapped = FALSE ) {
     expect_true( is.list( inds ) )
     expect_equal( names( inds ), ids )
     for ( id in ids ) {
-        validate_ind( inds[[ id ]], lengs, ancs_set )
+        validate_ind( inds[[ id ]], lengs, ancs_set, mapped = mapped )
     }
 }
 
@@ -111,8 +125,8 @@ test_that( "recomb_breaks works", {
 test_that( "recomb_chr works", {
     # construct parents who are founders (trivial ancestries)
     leng <- 200 # a larger chromosome
-    mother <- tibble( end = leng, anc = 'm' )
-    father <- tibble( end = leng, anc = 'f' )
+    mother <- tibble( posg = leng, anc = 'm' )
+    father <- tibble( posg = leng, anc = 'f' )
 
     # test errors
     expect_error( recomb_chr() )
@@ -152,21 +166,21 @@ test_that( "recomb_chr works", {
     validate_chr( child, leng, breaks, ancs1, ancs2 )
 
     # a more complicated example, with parents with multiple ancestors (2 each)
-    mother <- tibble( end = c( leng * 1/3, leng ), anc = paste0('m', 1:2) )
-    father <- tibble( end = c( leng * 2/3, leng ), anc = paste0('f', 1:2) )
+    mother <- tibble( posg = c( leng * 1/3, leng ), anc = paste0('m', 1:2) )
+    father <- tibble( posg = c( leng * 2/3, leng ), anc = paste0('f', 1:2) )
     # one recombination right in the middle
     breaks <- leng * 1/2
     # here number of breaks is variable because of which parent may be chosen first
     # if mother is first
-    child1 <- tibble( end = c( leng * 1/3, leng * 1/2, leng * 2/3, leng ), anc = c('m1', 'm2', 'f1', 'f2') )
+    child1 <- tibble( posg = c( leng * 1/3, leng * 1/2, leng * 2/3, leng ), anc = c('m1', 'm2', 'f1', 'f2') )
     # if father is first
-    child2 <- tibble( end = c( leng * 1/2, leng ), anc = c('f1', 'm2') )
+    child2 <- tibble( posg = c( leng * 1/2, leng ), anc = c('f1', 'm2') )
     # tests!
     expect_silent(
         child <- recomb_chr( breaks, mother, father )
     )
     expect_true( is.data.frame( child ) )
-    expect_equal( names( child ), c('end', 'anc') )
+    expect_equal( names( child ), c('posg', 'anc') )
     expect_true( nrow( child ) %in% c(2L, 4L) )
     # explicitly compare both possiblities in full detail
     if ( nrow( child ) == 4L ) {
@@ -176,13 +190,13 @@ test_that( "recomb_chr works", {
     }
 
     # complicate even more, with more ancestors, but with regular spacing for simplicity
-    mother <- tibble( end = leng * (1:10)/10, anc = paste0( 'm', 1:10 ) )
-    father <- tibble( end = leng * (1:10)/10, anc = paste0( 'f', 1:10 ) )
+    mother <- tibble( posg = leng * (1:10)/10, anc = paste0( 'm', 1:10 ) )
+    father <- tibble( posg = leng * (1:10)/10, anc = paste0( 'f', 1:10 ) )
     # new breaks that don't overlap with ancestral breaks
     breaks <- leng * (1:2)/3
     # if mother is picked first, this is what we expect
     child1 <- tibble(
-        end = sort( c( mother$end, breaks ) ),
+        posg = sort( c( mother$posg, breaks ) ),
         anc = c( paste0('m', 1:4 ), paste0('f', 4:7 ), paste0('m', 7:10 ) )
     )
     # if father is picked first, answer is the same but with parent roles reversed
@@ -196,7 +210,7 @@ test_that( "recomb_chr works", {
         child <- recomb_chr( breaks, mother, father )
     )
     expect_true( is.data.frame( child ) )
-    expect_equal( names( child ), c('end', 'anc') )
+    expect_equal( names( child ), c('posg', 'anc') )
     expect_equal( nrow( child ), nrow( child1 ) )
     # explicitly compare both possiblities in full detail
     if ( child$anc[1] == 'm1' ) {
@@ -216,8 +230,8 @@ test_that( "recomb_hap works", {
     lengs <- rexp( n_chr, rate = 1 / 200 )
     for ( chr in 1 : n_chr ) {
         # each parent has a single ancestor (itself)
-        mother[[ chr ]] <- tibble( end = lengs[ chr ], anc = 'm' )
-        father[[ chr ]] <- tibble( end = lengs[ chr ], anc = 'f' )
+        mother[[ chr ]] <- tibble( posg = lengs[ chr ], anc = 'm' )
+        father[[ chr ]] <- tibble( posg = lengs[ chr ], anc = 'f' )
     }
 
     # successful test
@@ -225,6 +239,17 @@ test_that( "recomb_hap works", {
         child <- recomb_hap( mother, father )
     )
     validate_hap( child, lengs, ancs_set = c('f', 'm') )
+})
+
+test_that( "recomb_map_lengs works", {
+    # just apply directly to latest genome version
+    map <- recomb_map_hg38
+    expect_silent(
+        lengs <- recomb_map_lengs( map, name = 'test' )
+    )
+    expect_true( is.numeric( lengs ) )
+    expect_equal( length( lengs ), length( map ) )
+    expect_true( all( lengs > 0 ) )
 })
 
 test_that( "recomb_init_founders works", {
@@ -363,4 +388,125 @@ test_that( "recomb_map_simplify_chr works", {
     # a few errors are greater than the tolerance but not by more than 2x
     expect_true( all( abs( posg_est - posg ) < 2 * tol ) )
     
+})
+
+test_that( "recomb_map_posg works", {
+    # here test all maps we have (all chromosomes, both hg versions provided), to make sure none produce warnings
+    for ( chr in 1 : 22 ) {
+        # test both maps provided with package 
+        for ( map in list( recomb_map_hg38[[ chr ]], recomb_map_hg37[[ chr ]]) ) {
+            leng <- max( map$posg )
+            # draw some breaks in genetic distance
+            posg <- recomb_breaks( leng )
+            # to avoid trivial case (zero recombinations), add length to end
+            posg <- c( posg, leng )
+            # map the breaks to bp positions!
+            expect_silent(
+                pos <- recomb_map_posg( posg, map )
+            )
+            expect_equal( length( pos ), length( posg ) )
+            expect_true( all( pos > 1 ) )
+            expect_true( all( diff( pos ) > 0 ) )
+        }
+    }
+})
+
+test_that( "recomb_map_chr works", {
+    # since all maps were thoroughly tested already, here a single random choice suffices
+    # pick a random human chromosome
+    chr <- sample( 22, 1 )
+    # use its map from hg38 (data has been made at this point)
+    map <- recomb_map_hg38[[ chr ]]
+    leng <- max( map$posg )
+    # draw some breaks in genetic distance
+    # to avoid trivial case (zero recombinations), add length to end (as proper chr inputs should be anyway)
+    chr <- tibble(
+        posg = c( recomb_breaks( leng ), leng )
+    )
+    # add arbitrary ancestors, just for code to work
+    ancs_set <- c('a', 'b')
+    chr$anc <- rep_len( ancs_set, nrow( chr ) )
+    # map the breaks to bp positions!
+    expect_silent(
+        chr <- recomb_map_chr( chr, map )
+    )
+    validate_chr( chr, leng, ancs_set = ancs_set, mapped = TRUE )
+})
+
+test_that( "recomb_map_hap, recomb_map_ind, recomb_map_inds work", {
+    # come up with toy test inputs
+    # use real recombination maps, but only a few random chromosomes to speed up tests
+    map <- recomb_map_hg38[ sample( 22, 2 ) ]
+    # so it's not entirely trivial, construct a child with recombined chromosomes of parents
+    # initialize fam table
+    fam <- tibble(
+        id = c('father', 'mother', 'child'),
+        pat = c(NA, NA, 'father'),
+        mat = c(NA, NA, 'mother')
+    )
+    # initialize founder structures
+    lengs <- sapply( map, function(x) x$posg[ nrow(x) ] )
+    expect_silent(
+        ancs <- recomb_init_founders( fam$id[1:2], lengs )
+    )
+    # draw recombined child (returns parents too)
+    expect_silent(
+        inds <- recomb_fam( ancs, fam )
+    )
+    # test child only
+    ind <- inds$child
+    # get one of the two sets of haploid chromosomes (pat, or mat) of individual
+    hap <- ind$pat
+    
+    # expect errors when things are missing
+    expect_error( recomb_map_hap( ) )
+    expect_error( recomb_map_hap( hap ) )
+    expect_error( recomb_map_hap( map = map ) )
+    expect_error( recomb_map_ind( ) )
+    expect_error( recomb_map_ind( ind ) )
+    expect_error( recomb_map_ind( map = map ) )
+    expect_error( recomb_map_inds( ) )
+    expect_error( recomb_map_inds( inds ) )
+    expect_error( recomb_map_inds( map = map ) )
+
+    # proper runs
+    expect_silent(
+        hap_out <- recomb_map_hap( hap, map )
+    )
+    # generic validator
+    validate_hap( hap_out, lengs, c('father_pat', 'father_mat'), mapped = TRUE )
+    # make sure only $pos data was added, i.e. if that were removed the object would be the same as input
+    hap_out_cleaned <- lapply( hap_out, function(x) { x$pos <- NULL; return( x ) } )
+    expect_equal( hap_out_cleaned, hap )
+
+    # run diploid individual test
+    expect_silent(
+        ind_out <- recomb_map_ind( ind, map )
+    )
+    # generic validator
+    validate_ind( ind_out, lengs, c('father_pat', 'father_mat', 'mother_pat', 'mother_mat'), mapped = TRUE )
+    # make sure only $pos data was added, i.e. if that were removed the object would be the same as input
+    ind_out_cleaned <- ind_out
+    ind_out_cleaned$pat <- lapply( ind_out_cleaned$pat, function(x) { x$pos <- NULL; return( x ) } )
+    ind_out_cleaned$mat <- lapply( ind_out_cleaned$mat, function(x) { x$pos <- NULL; return( x ) } )
+    expect_equal( ind_out_cleaned, ind )
+    # and make sure haploid $pat processing was the same (it is not random conditioning on breaks)
+    expect_equal( ind_out$pat, hap_out )
+
+    # run multiple individuals test
+    expect_silent(
+        inds_out <- recomb_map_inds( inds, map )
+    )
+    # generic validator
+    validate_inds( inds_out, fam$id, lengs, c('father_pat', 'father_mat', 'mother_pat', 'mother_mat'), mapped = TRUE )
+    # parents are quite trivial (will skip additional validations), but make sure child matches that of previous step
+    expect_equal( inds_out$child, ind_out )
+    # make sure only $pos data was added, i.e. if that were removed the object would be the same as input
+    inds_out_cleaned <- lapply( inds_out, function( ind ) {
+        ind$pat <- lapply( ind$pat, function(x) { x$pos <- NULL; return( x ) } )
+        ind$mat <- lapply( ind$mat, function(x) { x$pos <- NULL; return( x ) } )
+        return( ind )
+    })
+    expect_equal( inds_out_cleaned, inds )
+
 })

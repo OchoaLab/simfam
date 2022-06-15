@@ -1,4 +1,4 @@
-# parents are assumed to be a list of data.frames, one per chr, with 2 columns: end, anc
+# parents are assumed to be a list of data.frames, one per chr, with 2 columns: posg, anc
 # (start is 0 for first chunk, end from previous row otherwise)
 # mat/pat are symmetric (no distinction in practice)
 recomb_hap <- function( mat, pat ) {
@@ -38,9 +38,9 @@ recomb_hap <- function( mat, pat ) {
         # minimal checks for this purpose
         if ( !is.data.frame( chr_mat ) )
             stop( '`mat[[', chr, ']]` must be a data.frame (including tibble)!' )
-        if ( !( 'end' %in% names( chr_mat ) ) )
-            stop( '`mat[[', chr, ']]` must have column "end"!' )
-        chr_leng <- max( chr_mat$end )
+        if ( !( 'posg' %in% names( chr_mat ) ) )
+            stop( '`mat[[', chr, ']]` must have column "posg"!' )
+        chr_leng <- max( chr_mat$posg )
         # draw random chromosome breaks now!
         breaks <- recomb_breaks( chr_leng )
         # construct the ancestries of all chunks of child's chromosome now!
