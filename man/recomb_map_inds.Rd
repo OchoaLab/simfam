@@ -16,7 +16,7 @@ The input list of individuals, with each chromosome added column "pos" correspon
 Each chromosome has columns reordered so "pos", "posg", and "anc" appear first, and any additional columns appear afterwards.
 }
 \description{
-Given a list of individuals with recombination breaks given in genetic distance (such as the output of \code{\link[=recomb_fam]{recomb_fam()}}), and a genetic map (see \code{\link[=recomb_map_hg]{recomb_map_hg()}}), this function determines all positions in base pair coordinates.
+Given a list of individuals with recombination breaks given in genetic distance (such as the output of \code{\link[=recomb_fam]{recomb_fam()}}), and a genetic map (see \link{recomb_map_hg}), this function determines all positions in base pair coordinates.
 If base pair positions existed in input, they are overwritten.
 }
 \details{
@@ -47,5 +47,5 @@ inds <- recomb_map_inds( inds, map )
 \seealso{
 \code{\link[=recomb_fam]{recomb_fam()}} for drawing recombination breaks of individuals from a pedigree.
 
-\code{\link[=recomb_map_hg]{recomb_map_hg()}} for simplified human recombination maps included in this package.
+\link{recomb_map_hg} for simplified human recombination maps included in this package.
 }

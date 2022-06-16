@@ -6,7 +6,7 @@
 #' @param ids The list of IDs to use for each individual
 #' @param lengs The lengths of each chromosome in centi-Morgans (cM).
 #' If this vector is named, the output inherits these chromosome names.
-#' If it is a list, it is assumed to be a recombination map (see [recomb_map_hg()] for examples) and the desired lengths extracted automatically (taken as the last value of column "posg" of each chromosome).
+#' If it is a list, it is assumed to be a recombination map (see [recomb_map_hg] for examples) and the desired lengths extracted automatically (taken as the last value of column "posg" of each chromosome).
 #'
 #' @return A named list of diploid individuals, each of which is a list with two haploid individuals named "pat" and "mat", each of which is a list of chromosomes (inherits names of `lengs` if present), each of which is a tibble with a single row and two columns: "posg" equals the chromosome length, and "anc" equals the ID of the individual (from `ids`) concatenated with either "_pat" or "_mat" depending on which parent it is.
 #'
