@@ -114,3 +114,10 @@ First set of updates for simulating with recombination!
 - Functions `recomb_fam` and `recomb_init_founders` slight change in input and output formats: each chromosome list now has column "posg" indicating end of recombination block in genetic position (the column used to be called "end"; changed to match notation in recombination map, where "pos" is position in base pairs and "posg" is in genetic distance).
 - Function `recomb_init_founders` argument `lengs` may now be a recombination map for simplicity, from which the desired chromosome lengths are extracted, rather than having to extract them in a separate step.
 - Added function `recomb_map_inds` to map recombination breaks from genetic positions to base pair coordinates.
+
+# simfam 1.1.3.9000 (2022-06-24)
+
+- Added function `recomb_last_gen`, a wrapper around `recomb_fam` that processes data in discrete generations and returns the recombination breaks/blocks of the final generation only, to reduce memory usage.
+  Same analogy of previous `*_last_gen` functions and their corresponding `*_fam` versions.
+- Added function `recomb_haplo_inds` to construct the haplotypes of descendant individuals given the haplotypes of the ancestors.
+- Added function `recomb_geno_inds` to construct a standard genotype matrix from the haplotypes of individuals (a complex nested list structure).

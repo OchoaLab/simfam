@@ -316,6 +316,38 @@ test_that( "recomb_fam works", {
     validate_inds( inds, fam$id, lengs, ancs_set )
 })
 
+test_that( "recomb_last_gen works", {
+    # need a 3-generation pedigree
+    fam <- tibble(
+        id  = c('g1', 'g2', 'g3', 'g4', 'p1', 'p2', 'c1', 'c2'),
+        pat = c(  NA,   NA,   NA,   NA, 'g1', 'g3', 'p1', 'p1'),
+        mat = c(  NA,   NA,   NA,   NA, 'g2', 'g4', 'p2', 'p2')
+    )
+    # list IDs of each generation
+    ids <- list(
+        paste0( 'g', 1:4 ),
+        c('p1', 'p2'),
+        c('c1', 'c2')
+    )
+    # initialize founders
+    lengs <- c( 50, 100, 150 )
+    expect_silent(
+        founders <- recomb_init_founders( ids[[1]], lengs )
+    )
+    # expected ancestral IDs
+    ancs_set <- c(
+        paste0( ids[[1]], '_pat' ),
+        paste0( ids[[1]], '_mat' )
+    )
+    
+    # actual run
+    expect_silent(
+        inds <- recomb_last_gen( founders, fam, ids )
+    )
+    # full validation!
+    validate_inds( inds, ids[[3]], lengs, ancs_set )
+})
+
 test_that( "recomb_map_fix_ends_chr works", {
     # define an incomplete map, toy example only
     # because of default window size, ensure there's at least 10 Mb at each end!
@@ -445,7 +477,7 @@ test_that( "recomb_map_hap, recomb_map_ind, recomb_map_inds work", {
         mat = c(NA, NA, 'mother')
     )
     # initialize founder structures
-    lengs <- sapply( map, function(x) x$posg[ nrow(x) ] )
+    lengs <- recomb_map_lengs( map )
     expect_silent(
         ancs <- recomb_init_founders( fam$id[1:2], lengs )
     )
@@ -509,4 +541,194 @@ test_that( "recomb_map_hap, recomb_map_ind, recomb_map_inds work", {
     })
     expect_equal( inds_out_cleaned, inds )
 
+})
+
+test_that( "recomb_haplo_chr works", {
+    # make toy chr with breaks
+    # nothing random so output is deterministic
+    # only columns required are `anc` and `pos`
+    chr <- tibble(
+        pos = c(1000L, 3000L, 20000L, 50000L, 100000L),
+        anc = c('c', 'aaa', 'bb', 'z', 'd')
+    )
+    # now ancestor data
+    # some positions match breaks to test tie behavior (end inclusive)
+    pos <- c(2000L, 2500L, 3000L, 4000L, 5000L, 19000L, 30000L, 40000L, 50000L, 60000L, 90000L)
+    # ancestries in alphabetical order for clarity
+    ancs <- c('aaa', 'bb', 'c', 'd', 'z')
+    # filled by column! (default for R but not the way I normally think of it)
+    # make sure neighboring ancestries differ at breakpoints to test that correctly
+    X <- matrix(
+        c(
+            1L, 0L, NA, 0L, 0L, 1L, 1L, 0L, NA, 1L, 0L,
+            0L, 1L, 0L, 1L, 0L, 1L, 0L, 0L, 1L, NA, 1L,
+            1L, 0L, 0L, 1L, 1L, 1L, 0L, 1L, 0L, 1L, 0L,
+            NA, 1L, 0L, 0L, 1L, 0L, 1L, NA, NA, 0L, 0L,
+            1L, 1L, 0L, 1L, 0L, 0L, 1L, 0L, 1L, 0L, 1L
+        ),
+        nrow = length( pos ),
+        ncol = length( ancs )
+    )
+    colnames(X) <- ancs
+    # expected output given breaks
+    # NOTE: first block "c" has no SNPs! (important case to test), so start with "aaa"
+    # list of ancestries (for second test, but also for my reference)
+    ancs_exp <- c('aaa', 'aaa', 'aaa', 'bb', 'bb', 'bb', 'z', 'z', 'z', 'd', 'd')
+    x_exp <- c(1L, 0L, NA, 1L, 0L, 1L, 1L, 0L, 1L, 0L, 0L)
+    # run test!
+    expect_silent( 
+        x_out <- recomb_haplo_chr( chr, X, pos )
+    )
+    expect_equal( x_out, x_exp )
+
+    # repeat with version that returns ancestries
+    expect_silent( 
+        data <- recomb_haplo_chr( chr, X, pos, ret_anc = TRUE )
+    )
+    # gather expected output into list, as expected for single test
+    data_exp = list( x = x_exp, anc = ancs_exp )
+    expect_equal( data, data_exp )
+})
+
+test_that( "recomb_haplo_hap, recomb_haplo_ind, recomb_haplo_inds, recomb_geno_inds work", {
+    # come up with toy test inputs
+    # use real recombination maps, but only a few random chromosomes to speed up tests
+    n_chr <- 2
+    map <- recomb_map_hg38[ sample( 22, n_chr ) ]
+    # so it's not entirely trivial, construct a child with recombined chromosomes of parents
+    # initialize fam table
+    fam <- tibble(
+        id = c('father', 'mother', 'child'),
+        pat = c(NA, NA, 'father'),
+        mat = c(NA, NA, 'mother')
+    )
+    # need later...
+    anc_names <- c( 'father_pat', 'father_mat', 'mother_pat', 'mother_mat' )
+    # initialize founder structures
+    lengs <- recomb_map_lengs( map )
+    expect_silent(
+        ancs <- recomb_init_founders( fam$id[1:2], lengs )
+    )
+    # draw recombined child (returns parents too)
+    expect_silent(
+        inds <- recomb_fam( ancs, fam )
+    )
+    # map all breaks to basepair positions, needed for this test
+    expect_silent(
+        inds <- recomb_map_inds( inds, map )
+    )
+    # test child only
+    ind <- inds$child
+    # get one of the two sets of haploid chromosomes (pat, or mat) of individual
+    hap <- ind$pat
+
+    # now construct random haplotype input
+    haplo <- vector( 'list', n_chr )
+    # number of ancestors (x2 because we do haploids here)
+    n_ind <- length( ancs ) * 2L
+    # number of loci per chr, for toy test
+    m_loci <- 10L
+    for ( chr in 1L : n_chr ) {
+        # draw positions
+        pos_chr <- sample.int( max( map[[ chr ]]$pos ), m_loci )
+        # draw haplotypes
+        X_chr <- matrix(
+            rbinom( m_loci * n_ind, 1L, 0.5 ),
+            nrow = m_loci,
+            ncol = n_ind
+        )
+        # required column names!
+        colnames( X_chr ) <- anc_names
+        # add to structure, in a list
+        haplo[[ chr ]] <- list( X = X_chr, pos = pos_chr )
+    }
+    
+    # run desired tests!
+    expect_silent(
+        data_hap <- recomb_haplo_hap( hap, haplo )
+    )
+    # validate
+    expect_true( is.list( data_hap ) )
+    expect_equal( length( data_hap ), n_chr )
+    for ( chr in 1 : n_chr ) {
+        x <- data_hap[[ chr ]]
+        expect_true( is.integer( x ) )
+        expect_equal( length( x ), m_loci )
+        expect_true( all( x %in% c(0L, 1L) ) )
+    }
+    
+    # test version with per-pos ancestry
+    expect_silent(
+        data_hap_anc <- recomb_haplo_hap( hap, haplo, ret_anc = TRUE )
+    )
+    # validate
+    expect_true( is.list( data_hap_anc ) )
+    expect_equal( length( data_hap_anc ), n_chr )
+    for ( chr in 1 : n_chr ) {
+        data_chr <- data_hap_anc[[ chr ]]
+        expect_true( is.list( data_chr ) )
+        expect_equal( names( data_chr ), c('x', 'anc') )
+        x <- data_chr$x
+        anc <- data_chr$anc
+        expect_true( is.integer( x ) )
+        expect_equal( length( x ), m_loci )
+        expect_true( all( x %in% c(0L, 1L) ) )
+        expect_true( is.character( anc ) )
+        expect_equal( length( anc ), m_loci )
+        expect_true( all( anc %in% anc_names ) )
+    }
+
+    # ind version
+    expect_silent( 
+        data_ind <- recomb_haplo_ind( ind, haplo )
+    )
+    expect_true( is.list( data_ind ) )
+    expect_equal( names( data_ind ), c('pat', 'mat') )
+    # these should be the same!
+    expect_equal( data_ind$pat, data_hap )
+    
+    # ind version with ancestries
+    expect_silent( 
+        data_ind_anc <- recomb_haplo_ind( ind, haplo, ret_anc = TRUE )
+    )
+    expect_true( is.list( data_ind_anc ) )
+    expect_equal( names( data_ind_anc ), c('pat', 'mat') )
+    # these should be the same!
+    expect_equal( data_ind_anc$pat, data_hap_anc )
+
+    # inds version
+    expect_silent(
+        data_inds <- recomb_haplo_inds( inds, haplo )
+    )
+    expect_true( is.list( data_inds ) )
+    expect_equal( names( data_inds ), fam$id )
+    # these should be the same!
+    expect_equal( data_inds$child, data_ind )
+
+    # inds version with ancestries
+    expect_silent(
+        data_inds_anc <- recomb_haplo_inds( inds, haplo, ret_anc = TRUE )
+    )
+    expect_true( is.list( data_inds_anc ) )
+    expect_equal( names( data_inds_anc ), fam$id )
+    # these should be the same!
+    expect_equal( data_inds_anc$child, data_ind_anc )
+
+    # test function that converts output of previous functions into genotype matrices
+    expect_silent(
+        X <- recomb_geno_inds( data_inds )
+    )
+    expect_true( is.matrix( X ) )
+    expect_equal( ncol( X ), nrow( fam ) )
+    expect_equal( nrow( X ), m_loci * n_chr )
+    # true because of the way input `haplo` above was simulated
+    expect_true( is.integer( X ) )
+    expect_true( all( X %in% 0L:2L ) )
+
+    # make sure this works and output is identical when data with ancestries is passed
+    expect_silent(
+        X2 <- recomb_geno_inds( data_inds_anc )
+    )
+    expect_equal( X2, X )
+    
 })
