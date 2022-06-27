@@ -510,7 +510,7 @@ Here we use new functions to simulate recombination breaks and therefore a reali
 
 For comparison, let's start from the same pedigree used in the last "large" example.
 Here we shall simulate the first two human autosomes (coordinates in genome version hg38) with a real recombination map (slightly simplified) provided with this package.
-The steps are lengthy because of how 
+The steps are lengthy primarily due to the non-trivial construction of ancestral haplotypes.
 ```{r}
 # real human recombination map is also used to define chromosome numbers and lengths
 # however, to keep example brief we use only first two chromosomes
