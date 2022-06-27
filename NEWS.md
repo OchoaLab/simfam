@@ -121,3 +121,7 @@ First set of updates for simulating with recombination!
   Same analogy of previous `*_last_gen` functions and their corresponding `*_fam` versions.
 - Added function `recomb_haplo_inds` to construct the haplotypes of descendant individuals given the haplotypes of the ancestors.
 - Added function `recomb_geno_inds` to construct a standard genotype matrix from the haplotypes of individuals (a complex nested list structure).
+
+# simfam 1.1.4.9000 (2022-06-27)
+
+- Added function `fam_ancestors` to construct simple ancestor pedigrees for a single person with a desired number of generations, and automatic names.

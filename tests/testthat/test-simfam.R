@@ -747,3 +747,59 @@ test_that( "admix_last_gen works", {
     )
     expect_equal( admix_G, admix_G_exp )
 })
+
+test_that( "fam_ancestors works", {
+    # only one argument is mandatory
+    expect_error( fam_ancestors() )
+    # zero or negative generations are invalid
+    expect_error( fam_ancestors( 0 ) )
+    expect_error( fam_ancestors( -10 ) )
+    
+    # test trivial example
+    G <- 1L
+    expect_silent(
+        data <- fam_ancestors( G )
+    )
+    expect_true( is.list( data ) )
+    expect_equal( names( data ), c( 'fam', 'ids' ) )
+    fam <- data$fam
+    ids <- data$ids
+    # validate fam
+    expect_true( is.data.frame( fam ) )
+    expect_equal( names( fam ), c('id', 'pat', 'mat', 'sex') )
+    expect_true( all( fam$pat[ !is.na( fam$pat ) ] %in% fam$id ) )
+    expect_true( all( fam$mat[ !is.na( fam$mat ) ] %in% fam$id ) )
+    # confirm that all fathers are male, mothers female
+    expect_true( all( fam$sex[ fam$id %in% fam$pat ] == 1L ) )
+    expect_true( all( fam$sex[ fam$id %in% fam$mat ] == 2L ) )
+    # validate IDs
+    expect_true( is.list( ids ) )
+    expect_equal( length( ids ), G )
+    for ( ids_g in ids ) {
+        expect_true( all( ids_g %in% fam$id ) )
+    }
+
+    # test substantially larger example
+    G <- 8L
+    expect_silent(
+        data <- fam_ancestors( G )
+    )
+    expect_true( is.list( data ) )
+    expect_equal( names( data ), c( 'fam', 'ids' ) )
+    fam <- data$fam
+    ids <- data$ids
+    # validate fam
+    expect_true( is.data.frame( fam ) )
+    expect_equal( names( fam ), c('id', 'pat', 'mat', 'sex') )
+    expect_true( all( fam$pat[ !is.na( fam$pat ) ] %in% fam$id ) )
+    expect_true( all( fam$mat[ !is.na( fam$mat ) ] %in% fam$id ) )
+    # confirm that all fathers are male, mothers female
+    expect_true( all( fam$sex[ fam$id %in% fam$pat ] == 1L ) )
+    expect_true( all( fam$sex[ fam$id %in% fam$mat ] == 2L ) )
+    # validate IDs
+    expect_true( is.list( ids ) )
+    expect_equal( length( ids ), G )
+    for ( ids_g in ids ) {
+        expect_true( all( ids_g %in% fam$id ) )
+    }
+})

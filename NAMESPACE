@@ -3,6 +3,7 @@
 export(admix_fam)
 export(admix_last_gen)
 export(draw_sex)
+export(fam_ancestors)
 export(geno_fam)
 export(geno_last_gen)
 export(kinship_fam)
