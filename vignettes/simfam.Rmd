@@ -502,3 +502,93 @@ barplot(
 # add a line marking the maximum fraction of individuals per generation
 abline( h = 1, lty = 2, col = 'red' )
 ```
+
+# Example with recombination
+
+All previous examples had independent loci.
+Here we use new functions to simulate recombination breaks and therefore a realistic linkage disequilibrium (LD) structure consistent with the pedigree.
+
+For comparison, let's start from the same pedigree used in the last "large" example.
+Here we shall simulate the first two human autosomes (coordinates in genome version hg38) with a real recombination map (slightly simplified) provided with this package.
+The steps are lengthy because of how 
+```{r}
+# real human recombination map is also used to define chromosome numbers and lengths
+# however, to keep example brief we use only first two chromosomes
+map <- recomb_map_hg38[ 1L:2L ]
+
+# tricky part is need to define ancestral haplotypes, following the desired genetic structure
+# will simulate each chromosome separately
+haplos_anc <- vector( 'list', length( map ) )
+for ( chr in 1L : length( map ) ) {
+    # Positions matter for genetic map, so for this example choose random positions with a
+    # desired density, here 100 per Kb on average, keep it sparse for small example
+    pos_max <- max( map[[ chr ]]$pos )
+    m_loci_chr <- round( pos_max / 100000L )
+    pos_chr <- sample.int( pos_max, m_loci_chr )
+    # Draw haplotypes.  Here we use admixture code to get genotypes
+    # with same structure as before for first generation
+    X_chr <- draw_all_admix( admix_proportions_1, inbr_subpops, m_loci_chr )$X
+    # and randomly split genotypes into haplotypes
+    # (there was no LD/phase so this works well enough for our purposes)
+    H1_chr <- matrix( rbinom( X_chr, 1L, X_chr/2L ), nrow = m_loci_chr )
+    # second haplotype is complement of first given genotypes
+    H2_chr <- X_chr - H1_chr
+    # column names are required for code later, identifying ancestors (need _pat/mat suffixes)
+    colnames( H1_chr ) <- paste0( colnames( X_chr ), '_pat' )
+    colnames( H2_chr ) <- paste0( colnames( X_chr ), '_mat' )
+    # final data all together
+    X_chr <- cbind( H1_chr, H2_chr )
+    # add to structure, in a list
+    haplos_anc[[ chr ]] <- list( X = X_chr, pos = pos_chr )
+}
+
+# initialize trivial founders chromosomes (unrecombined chromosomes with unique labels)
+# must use IDs of first generation from pedigree as input
+founders <- recomb_init_founders( ids[[ 1 ]], map )
+# draw recombination breaks along pedigree, with coordinates in genetic distance (centiMorgans)
+inds <- recomb_last_gen( founders, fam, ids )
+# map recombination break coordinates to base pairs
+inds <- recomb_map_inds( inds, map )
+# determine haplotypes of descendants given ancestral haplotypes
+haplos <- recomb_haplo_inds( inds, haplos_anc )
+# and reduce haplotype data to genotypes, same standard matrix format as previous examples
+X_G_recomb <- recomb_geno_inds( haplos )
+# total kinship estimated from genotypes (simulated with recombination)
+kinship_total_G_recomb_est <- popkin( X_G_recomb )
+```
+First we validate that the kinship structure of these genotypes with recombination matches the earlier estimate from the simulation with independent loci as well as the expected kinship from the pedigree.
+Below it can be seen that the coarse structure is the same, although the data with recombination appears noisier, as expected because LD increases estimation variance.
+Simulating more chromosomes would reduce the variance considerably.
+```{r, fig.width = 7, fig.height = 2.3, fig.align = 'center'}
+plot_popkin(
+    list( kinship_total_G, kinship_total_G_est, kinship_total_G_recomb_est ),
+    titles = c('Expected', 'Estimated (indep loci)', 'Estimated (recomb)'),
+    mar = c(3, 2)
+)
+```
+Now let's confirm the presence of LD.
+The below plot shows that genotype correlations are noisy overall (because the number of individuals is small in our toy example) but nevertheless, correlations within the two chromosomes in the simulation with recombination (two diagonal blocks in panel B below) are noticeably larger than correlations between chromosomes, as well as the correlations in the earlier simulation with independent loci (panel A).
+```{r, fig.width = 7, fig.height = 3.4, fig.align = 'center'}
+# Notice that the number of loci is similar for both simulations
+# (rows of the genotype matrices)
+dim( X_G )
+dim( X_G_recomb )
+
+# Calculate correlation matrices between loci (hence transposition).
+# Exclude fixed loci to prevent warnings about zero standard deviations.
+ld_G <- abs( cor( t( X_G[ !fixed_loci( X_G ), ] ) ) )
+ld_G_recomb <- abs( cor( t( X_G_recomb[ !fixed_loci( X_G_recomb ), ] ) ) )
+# cap extreme values, to be able to see the relatively weak LD signal
+ld_max <- 0.3
+ld_G[ ld_G > ld_max ] <- ld_max
+ld_G_recomb[ ld_G_recomb > ld_max ] <- ld_max
+# plot!
+plot_popkin(
+    list( ld_G, ld_G_recomb ),
+    titles = c('Indep loci', 'Recomb'),
+    leg_width = 0.2,
+    mar = c(3, 2),
+    leg_title = 'Absolute Correlation',
+    ylab = 'Loci'
+)
+```
