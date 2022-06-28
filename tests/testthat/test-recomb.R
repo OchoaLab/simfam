@@ -590,7 +590,7 @@ test_that( "recomb_haplo_chr works", {
     expect_equal( data, data_exp )
 })
 
-test_that( "recomb_haplo_hap, recomb_haplo_ind, recomb_haplo_inds, recomb_geno_inds work", {
+test_that( "recomb_haplo_hap, recomb_haplo_ind, recomb_haplo_inds, recomb_geno_inds, recomb_admix_inds work", {
     # come up with toy test inputs
     # use real recombination maps, but only a few random chromosomes to speed up tests
     n_chr <- 2
@@ -730,5 +730,55 @@ test_that( "recomb_haplo_hap, recomb_haplo_ind, recomb_haplo_inds, recomb_geno_i
         X2 <- recomb_geno_inds( data_inds_anc )
     )
     expect_equal( X2, X )
+
+    # now test admixture dosages function
+    # define ancestry map
+    anc_map <- tibble(
+        anc = anc_names, # recall these are 4 haplotypes
+        pop = c('AFR', 'EUR', 'AFR', 'AFR')
+    )
+    pops <- c('AFR', 'EUR') # expected output names
+    # must use the data with ancestries (expect error otherwise!)
+    expect_error( recomb_admix_inds( data_inds, anc_map ) )
+    # successful run
+    expect_silent(
+        X_anc <- recomb_admix_inds( data_inds_anc, anc_map )
+    )
+    expect_true( is.list( X_anc ) )
+    expect_equal( length( X_anc ), length( pops ) )
+    expect_equal( names( X_anc ), pops )
+    for ( pop in pops ) {
+        X_pop <- X_anc[[ pop ]]
+        expect_true( is.matrix( X_pop ) )
+        expect_equal( ncol( X_pop ), nrow( fam ) )
+        expect_equal( nrow( X_pop ), m_loci * n_chr )
+        expect_true( is.integer( X_pop ) )
+        expect_true( all( X_pop %in% 0L:2L ) )
+    }
+    
+    # simulate a case where each parent has a single ancestry (both of its haplotypes), so the child's dosages are 1 everywhere!
+    anc_map <- tibble(
+        anc = anc_names, # recall these are 4 haplotypes
+        pop = c('AFR', 'AFR', 'EUR', 'EUR')
+    )
+    # successful run
+    expect_silent(
+        X_anc <- recomb_admix_inds( data_inds_anc, anc_map )
+    )
+    expect_true( is.list( X_anc ) )
+    expect_equal( length( X_anc ), length( pops ) )
+    expect_equal( names( X_anc ), pops )
+    for ( pop in pops ) {
+        X_pop <- X_anc[[ pop ]]
+        expect_true( is.matrix( X_pop ) )
+        expect_equal( ncol( X_pop ), nrow( fam ) )
+        expect_equal( nrow( X_pop ), m_loci * n_chr )
+        expect_true( is.integer( X_pop ) )
+        # for parents, none are 1
+        expect_true( all( X_pop[ , 1L:2L ] != 1L ) )
+        # for child, all are 1
+        expect_true( all( X_pop[ , 3L ] == 1L ) )
+    }
     
 })
+

@@ -125,3 +125,8 @@ First set of updates for simulating with recombination!
 # simfam 1.1.4.9000 (2022-06-27)
 
 - Added function `fam_ancestors` to construct simple ancestor pedigrees for a single person with a desired number of generations, and automatic names.
+
+# simfam 1.1.5.9000 (2022-06-28)
+
+- Added function `recomb_admix_inds` to produce true population ancestry dosage matrices that parallel genotype matrices, useful for regression models that incorporate local ancestry.
+
