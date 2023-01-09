@@ -2,19 +2,19 @@
 % Please edit documentation in R/recomb_init_founders.R
 \name{recomb_init_founders}
 \alias{recomb_init_founders}
-\title{Initialize chromosome strctures for founders}
+\title{Initialize chromosome structures for founders}
 \usage{
 recomb_init_founders(ids, lengs)
 }
 \arguments{
 \item{ids}{The list of IDs to use for each individual}
 
-\item{lengs}{The lengths of each chromosome in centi-Morgans (cM).
+\item{lengs}{The lengths of each chromosome in centiMorgans (cM).
 If this vector is named, the output inherits these chromosome names.
-If it is a list, it is assumed to be a recombination map (see \link{recomb_map_hg} for examples) and the desired lengths extracted automatically (taken as the last value of column "posg" of each chromosome).}
+If it is a list, it is assumed to be a recombination map (see \code{\link{recomb_map_hg}} for examples) and the desired lengths extracted automatically (taken as the last value of column \code{posg} of each chromosome).}
 }
 \value{
-A named list of diploid individuals, each of which is a list with two haploid individuals named "pat" and "mat", each of which is a list of chromosomes (inherits names of \code{lengs} if present), each of which is a tibble with a single row and two columns: "posg" equals the chromosome length, and "anc" equals the ID of the individual (from \code{ids}) concatenated with either "_pat" or "_mat" depending on which parent it is.
+A named list of diploid individuals, each of which is a list with two haploid individuals named \code{pat} and \code{mat}, each of which is a list of chromosomes (inherits names of \code{lengs} if present), each of which is a tibble with a single row and two columns: \code{posg} equals the chromosome length, and \code{anc} equals the ID of the individual (from \code{ids}) concatenated with either \verb{_pat} or \verb{_mat} depending on which parent it is.
 }
 \description{
 This function initializes what is otherwise a tedious structure for founders, to be used for simulating recombination in a pedigree.

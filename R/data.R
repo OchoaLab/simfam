@@ -7,12 +7,12 @@
 #'
 #' @format
 #' A list with 22 elements (autosomes, not named), each a tibble with two columns defining the recombination map at that chromosome:
-#' - "pos": position in base pairs
-#' - "posg": position in centiMorgans (cM)
+#' - `pos`: position in base pairs
+#' - `posg`: position in centiMorgans (cM)
 #'
 #' @source
-#' Raw genetic maps dowloaded from this location prior to above processing:
-#' <http://bochet.gcc.biostat.washington.edu/beagle/genetic_maps/>
+#' Raw genetic maps downloaded from this location prior to above processing:
+#' <https://bochet.gcc.biostat.washington.edu/beagle/genetic_maps/>
 #'
 #' Chromosome lengths from:
 #' <https://www.ncbi.nlm.nih.gov/grc/human/data>

@@ -45,7 +45,7 @@
 
 # simfam 0.0.9.9000 (2021-08-06)
 
-- Rewrote core of function `draw_geno_fam` in C++ (using Rcpp).
+- Rewrote core of function `draw_geno_fam` in C++ (using `Rcpp`).
   New version is much faster and uses about half as much memory as the previous pure-R version!
 
 # simfam 0.0.10.9000 (2021-08-06)
@@ -111,7 +111,7 @@ First set of updates for simulating with recombination!
 
 # simfam 1.1.2.9000 (2022-06-15)
 
-- Functions `recomb_fam` and `recomb_init_founders` slight change in input and output formats: each chromosome list now has column "posg" indicating end of recombination block in genetic position (the column used to be called "end"; changed to match notation in recombination map, where "pos" is position in base pairs and "posg" is in genetic distance).
+- Functions `recomb_fam` and `recomb_init_founders` slight change in input and output formats: each chromosome list now has column `posg` indicating end of recombination block in genetic position (the column used to be called `end`; changed to match notation in recombination map, where `pos` is position in base pairs and `posg` is in genetic distance).
 - Function `recomb_init_founders` argument `lengs` may now be a recombination map for simplicity, from which the desired chromosome lengths are extracted, rather than having to extract them in a separate step.
 - Added function `recomb_map_inds` to map recombination breaks from genetic positions to base pair coordinates.
 
@@ -130,3 +130,11 @@ First set of updates for simulating with recombination!
 
 - Added function `recomb_admix_inds` to produce true population ancestry dosage matrices that parallel genotype matrices, useful for regression models that incorporate local ancestry.
 
+# simfam 1.1.6 (2023-01-06)
+
+- CRAN submission
+- Documentation edits
+  - Updated hyperlink to raw genetic maps.
+  - Fixed typos
+  - Escaped more code to simplify spellcheck in the future.
+- Updated `cran-comments.md`

@@ -4,8 +4,8 @@
 #' In this context, "ancestors/ancestry" refer to haplotype blocks from specific ancestor individuals, whereas "population ancestry" groups these ancestors into populations (such as African, European, etc.).
 #' Although the haplotype data separates individuals and chromosomes into lists (the way it is simulated), the output matrices concatenates data from all chromosomes into a single matrix, as it appears in simpler simulations and real data, and matching the format of [recomb_geno_inds()].
 #'
-#' @param haplos A list of diploid individuals, each of which is a list with two haploid individuals named "pat" and "mat", each of which is a list of chromosomes, each of which must be a list with a named element "anc" must give the vector of ancestor names per position (the output format from [recomb_haplo_inds()] with `ret_anc = TRUE`).
-#' @param anc_map A data.frame or tibble with two columns: "anc" lists every ancestor haplotype name present in `haplos`, and "pop" the population assignment of that haplotype.
+#' @param haplos A list of diploid individuals, each of which is a list with two haploid individuals named `pat` and `mat`, each of which is a list of chromosomes, each of which must be a list with a named element `anc` must give the vector of ancestor names per position (the output format from [recomb_haplo_inds()] with `ret_anc = TRUE`).
+#' @param anc_map A data.frame or tibble with two columns: `anc` lists every ancestor haplotype name present in `haplos`, and `pop` the population assignment of that haplotype.
 #' @param pops Optional order of populations in output, by default sorted alphabetically from `anc_map$pop`.
 #'
 #' @return A named list of population ancestry dosage matrices, ordered as in `pops`, each of which counts populations in both alleles (in 0, 1, 2), with individuals along columns in same order as `haplos` list, and loci along rows in order of appearance concatenating chromosomes in numerical order.

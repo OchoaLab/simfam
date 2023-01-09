@@ -7,9 +7,9 @@
 recomb_admix_inds(haplos, anc_map, pops = sort(unique(anc_map$pop)))
 }
 \arguments{
-\item{haplos}{A list of diploid individuals, each of which is a list with two haploid individuals named "pat" and "mat", each of which is a list of chromosomes, each of which must be a list with a named element "anc" must give the vector of ancestor names per position (the output format from \code{\link[=recomb_haplo_inds]{recomb_haplo_inds()}} with \code{ret_anc = TRUE}).}
+\item{haplos}{A list of diploid individuals, each of which is a list with two haploid individuals named \code{pat} and \code{mat}, each of which is a list of chromosomes, each of which must be a list with a named element \code{anc} must give the vector of ancestor names per position (the output format from \code{\link[=recomb_haplo_inds]{recomb_haplo_inds()}} with \code{ret_anc = TRUE}).}
 
-\item{anc_map}{A data.frame or tibble with two columns: "anc" lists every ancestor haplotype name present in \code{haplos}, and "pop" the population assignment of that haplotype.}
+\item{anc_map}{A data.frame or tibble with two columns: \code{anc} lists every ancestor haplotype name present in \code{haplos}, and \code{pop} the population assignment of that haplotype.}
 
 \item{pops}{Optional order of populations in output, by default sorted alphabetically from \code{anc_map$pop}.}
 }

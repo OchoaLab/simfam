@@ -7,16 +7,16 @@
 recomb_map_inds(inds, map)
 }
 \arguments{
-\item{inds}{The list of individuals, each of which is a list with two haploid individuals named "pat" and "mat", each of which is a list of chromosomes (always identified by number, but may also be named arbitrarily), each of which is a data.frame/tibble with implicit ranges ("posg" is end coordinates in cM; start is the end of the previous block, zero for the first block) and ancestors "anc" as strings.}
+\item{inds}{The list of individuals, each of which is a list with two haploid individuals named \code{pat} and \code{mat}, each of which is a list of chromosomes (always identified by number, but may also be named arbitrarily), each of which is a data.frame/tibble with implicit ranges (\code{posg} is end coordinates in cM; start is the end of the previous block, zero for the first block) and ancestors \code{anc} as strings.}
 
-\item{map}{The genetic map, a list of chromosomes each of which is a data.frame/tibble with columns "pos" for base pair position and "posg" for genetic position.}
+\item{map}{The genetic map, a list of chromosomes each of which is a data.frame/tibble with columns \code{pos} for base pair position and \code{posg} for genetic position.}
 }
 \value{
-The input list of individuals, with each chromosome added column "pos" corresponding to end coordinate in base pairs.
-Each chromosome has columns reordered so "pos", "posg", and "anc" appear first, and any additional columns appear afterwards.
+The input list of individuals, with each chromosome added column \code{pos} corresponding to end coordinate in base pairs.
+Each chromosome has columns reordered so \code{pos}, \code{posg}, and \code{anc} appear first, and any additional columns appear afterwards.
 }
 \description{
-Given a list of individuals with recombination breaks given in genetic distance (such as the output of \code{\link[=recomb_fam]{recomb_fam()}}), and a genetic map (see \link{recomb_map_hg}), this function determines all positions in base pair coordinates.
+Given a list of individuals with recombination breaks given in genetic distance (such as the output of \code{\link[=recomb_fam]{recomb_fam()}}), and a genetic map (see \code{\link{recomb_map_hg}}), this function determines all positions in base pair coordinates.
 If base pair positions existed in input, they are overwritten.
 }
 \details{
@@ -47,5 +47,5 @@ inds <- recomb_map_inds( inds, map )
 \seealso{
 \code{\link[=recomb_fam]{recomb_fam()}} for drawing recombination breaks of individuals from a pedigree.
 
-\link{recomb_map_hg} for simplified human recombination maps included in this package.
+\code{\link{recomb_map_hg}} for simplified human recombination maps included in this package.
 }

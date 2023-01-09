@@ -1,13 +1,13 @@
 #' Construct haplotypes of individuals given their ancestral blocks and the ancestral haplotype variants
 #'
-#' @param inds A list of individuals in the same format as the output of [recomb_fam()] after being procesed with [recomb_map_inds()].
-#' More specifically, each individual is a list with two haploid individuals named "pat" and "mat", each of which is a list of chromosomes (always identified by number, but may also be named arbitrarily), each of which is a data.frame/tibble with implicit ranges ("pos" is end coordinates in base pairs; start is the end of the previous block plus one, 1 for the first block) and ancestors "anc" as strings.
-#' @param haplo The ancestral haplotypes, which is a list of chromosomes, each of which is a list with two named elements: "X" is a matrix of haplotype markers (loci along rows, ancestral individuals along columns, which must be named as in "anc" strings in `inds` above), and "pos" is a vector of locus positions in base pair coordinates.
+#' @param inds A list of individuals in the same format as the output of [recomb_fam()] after being processed with [recomb_map_inds()].
+#' More specifically, each individual is a list with two haploid individuals named `pat` and `mat`, each of which is a list of chromosomes (always identified by number, but may also be named arbitrarily), each of which is a data.frame/tibble with implicit ranges (`pos` is end coordinates in base pairs; start is the end of the previous block plus one, 1 for the first block) and ancestors `anc` as strings.
+#' @param haplo The ancestral haplotypes, which is a list of chromosomes, each of which is a list with two named elements: `X` is a matrix of haplotype markers (loci along rows, ancestral individuals along columns, which must be named as in `anc` strings in `inds` above), and `pos` is a vector of locus positions in base pair coordinates.
 #' @param ret_anc If `TRUE`, returns local ancestries (per position) along with haplotypes, otherwise only haplotypes are returned.
 #'
-#' @return A list of diploid individuals, each of which is a list with two haploid individuals named "pat" and "mat", each of which is a list of chromosomes.
+#' @return A list of diploid individuals, each of which is a list with two haploid individuals named `pat` and `mat`, each of which is a list of chromosomes.
 #' If `ret_anc = FALSE` (default), each chromosome is a haplotype (vector of values copied from ancestors in `haplo`);
-#' if `ret_anc = TRUE`, each chromosome is a list with named elements "x" for the haplotype vector and "anc" for the vector of ancestor name per position.
+#' if `ret_anc = TRUE`, each chromosome is a list with named elements `x` for the haplotype vector and `anc` for the vector of ancestor name per position.
 #'
 #' @examples
 #' # Lengthy code creates individuals with recombination data to map

@@ -9,15 +9,15 @@
 \format{
 A list with 22 elements (autosomes, not named), each a tibble with two columns defining the recombination map at that chromosome:
 \itemize{
-\item "pos": position in base pairs
-\item "posg": position in centiMorgans (cM)
+\item \code{pos}: position in base pairs
+\item \code{posg}: position in centiMorgans (cM)
 }
 
 An object of class \code{list} of length 22.
 }
 \source{
-Raw genetic maps dowloaded from this location prior to above processing:
-\url{http://bochet.gcc.biostat.washington.edu/beagle/genetic_maps/}
+Raw genetic maps downloaded from this location prior to above processing:
+\url{https://bochet.gcc.biostat.washington.edu/beagle/genetic_maps/}
 
 Chromosome lengths from:
 \url{https://www.ncbi.nlm.nih.gov/grc/human/data}
