@@ -1,4 +1,4 @@
-# simfam
+# simfam <img src="man/figures/logo.png" alt="simfam" align="right" />
 
 The goal of simfam is to simulate and model families with founders drawn from a structured population.
 The main function simulates a random pedigree for many generations with realistic features.

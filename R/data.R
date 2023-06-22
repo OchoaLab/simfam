@@ -1,7 +1,7 @@
 #' Simplified recombination maps for human genomes
 #'
 #' Human genetic recombination maps for builds 38 (GRCh38/hg38) and 37 (GRCh37/hg19, below suffixed as hg37 for simplicity although technically incorrect).
-#' Processed each first with [recomb_map_fix_ends_chr()] to shift and extrapolate to sequence ends, then simplified with [recomb_map_simplify_chr()] to remove all values that can be extrapolated with an error of up to `tol = 0.1`, in order to reduce their sizes and interpolation runtime.
+#' Processed each first with [recomb_map_fix_ends_chr()] to shift and extrapolate to sequence ends, then simplified with [recomb_map_simplify_chr()] to remove all values that can be interpolated with an error of up to `tol = 0.1`, in order to reduce their sizes and interpolation runtime.
 #' Defaults were used, which resulted in extrapolated recombination rates close to and centered around the average of 1e-6 cM/base).
 #' Autosomes only.
 #'

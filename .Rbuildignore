@@ -1,3 +1,4 @@
+^logo
 ^LICENSE\.md$
 scripts
 ^doc$
@@ -5,3 +6,4 @@ scripts
 ^cran-comments\.md$
 ^CRAN-RELEASE$
 unpub
+^CRAN-SUBMISSION$

@@ -138,3 +138,8 @@ First set of updates for simulating with recombination!
   - Fixed typos
   - Escaped more code to simplify spellcheck in the future.
 - Updated `cran-comments.md`
+
+# simfam 1.1.6.9000 (2023-06-22)
+
+- Added a logo for the package, displayed at the top of the `README.md` page
+- Minor documentation correction for data `recomb_map_hg`.
