@@ -782,3 +782,50 @@ test_that( "recomb_haplo_hap, recomb_haplo_ind, recomb_haplo_inds, recomb_geno_i
     
 })
 
+test_that( "bim_add_posg works", {
+    # a toy dataset that should succeed
+    # chr, pos are minimal required columns
+    # random is an additional column, which should be fine to have
+    bim <- tibble( chr = 1:22, pos = (22:1) * 10000000, random = 'x' )
+    map <- recomb_map_hg38
+    expect_silent(
+        bim2 <- bim_add_posg( bim, map )
+    )
+    # comfirm that rest of tibble is unaltered, just posg was added
+    bim3 <- bim2
+    bim3$posg <- NULL
+    expect_equal( bim, bim3 )
+    # now check new column
+    # in this case we just want numbers, positive values
+    expect_true( is.numeric( bim2$posg ) )
+    expect_true( min( bim2$posg ) >= 0 )
+
+    # repeat test but with a single valid chromosome, which should work without issues
+    bim$chr <- 3
+    expect_silent(
+        bim2 <- bim_add_posg( bim, map )
+    )
+    # comfirm that rest of tibble is unaltered, just posg was added
+    bim3 <- bim2
+    bim3$posg <- NULL
+    expect_equal( bim, bim3 )
+    # now check new column
+    # in this case we just want numbers, positive values
+    expect_true( is.numeric( bim2$posg ) )
+    expect_true( min( bim2$posg ) >= 0 )
+    # because the positions were sorted backwards, all differences must be negative
+    # (tests that pos and posg are monotonically increasing)
+    expect_true( max( diff( bim2$posg ) ) <= 0 )
+
+    # out-of-range chromosomes are just unmapped with a warning
+    bim_bad <- bim
+    bim_bad$chr <- 'x'
+    # initialize to facilitate comparison to output
+    bim_bad$posg <- NA
+    expect_warning(
+        bim_bad2 <- bim_add_posg( bim_bad, map )
+    )
+    # in this case output matches input
+    expect_equal( bim_bad2, bim_bad )
+})
+

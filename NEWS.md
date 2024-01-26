@@ -143,3 +143,8 @@ First set of updates for simulating with recombination!
 
 - Added a logo for the package, displayed at the top of the `README.md` page
 - Minor documentation correction for data `recomb_map_hg`.
+
+# simfam 1.1.7.9000 (2024-01-25)
+
+- Added function `bim_add_posg` to calculate genetic positions from base pair positions and a genetic map.
+- In DESCRIPTION, updated citation to published paper.

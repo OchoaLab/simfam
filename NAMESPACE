@@ -2,6 +2,7 @@
 
 export(admix_fam)
 export(admix_last_gen)
+export(bim_add_posg)
 export(draw_sex)
 export(fam_ancestors)
 export(geno_fam)

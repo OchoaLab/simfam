@@ -3,7 +3,6 @@
 \docType{package}
 \name{simfam-package}
 \alias{simfam-package}
-\alias{_PACKAGE}
 \alias{simfam}
 \title{Simulate and Model Family Pedigrees With Structured Founders}
 \description{

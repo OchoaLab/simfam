@@ -20,7 +20,7 @@ Given a list of individuals with recombination breaks given in genetic distance 
 If base pair positions existed in input, they are overwritten.
 }
 \details{
-Genetic positions are converted to base pair positions from the provided map using linear interpolation, using \code{\link[stats:approxfun]{stats::approx()}} with options \code{rule = 2} (out of range cases are set to nearest end's value) and \code{ties = list( 'ordered', mean )} (assume data is ordered, interpolate ties in genetic distance in map using mean of base pair positions).
+Genetic positions are converted to base pair positions from the provided map using linear interpolation, using \code{\link[stats:approxfun]{stats::approx()}} with options \code{rule = 2} (out of range cases are set to nearest end's value) and \code{ties = list( 'ordered', mean )} (assume data is ordered, interpolate ties in genetic position in map using mean of base pair positions).
 Output will be incorrect, without throwing errors, if genetic map is not ordered.
 Base pair positions are rounded to integers.
 }
