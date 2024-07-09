@@ -829,3 +829,130 @@ test_that( "bim_add_posg works", {
     expect_equal( bim_bad2, bim_bad )
 })
 
+test_that( "pop_recomb_chr works", {
+    # some recombination (reduced from 500 to speed up tests)
+    G <- 10
+    # need single chromosome, but let's pick a realistic one
+    map <- recomb_map_hg38[[ 22L ]]
+    # sample random positions allowed by the map
+    m_loci <- 10
+    pos <- sample( max( map$pos ), m_loci )
+    # and random haplotype data to go with this
+    n_ind <- 9
+    haps <- matrix( rbinom( m_loci * n_ind, 1, 0.5 ), nrow = m_loci, ncol = n_ind )
+
+    # test a trivial single haplotype as input, so answer is deterministic
+    # (but must pass as matrix, hence `drop = FALSE`)
+    expect_silent( 
+        hap_new <- pop_recomb_chr( haps[, 1, drop = FALSE ], pos, map, G )
+    )
+    # equal as vectors
+    expect_equal( hap_new, haps[ , 1 ] )
+
+    # now proper full dataset, intended binary case
+    expect_silent( 
+        hap_new <- pop_recomb_chr( haps, pos, map, G )
+    )
+    expect_equal( length( hap_new ), m_loci )
+    expect_true( all( hap_new %in% c(0L, 1L) ) )
+
+    # a weird artificial case that identifies the ancestor only, by number
+    n_ind <- 3L
+    haps <- t( matrix( 1 : n_ind, nrow = n_ind, ncol = m_loci ) )
+    expect_silent( 
+        hap_new <- pop_recomb_chr( haps, pos, map, G )
+    )
+    expect_equal( length( hap_new ), m_loci )
+    expect_true( all( hap_new %in% 1L : n_ind ) )
+
+    # and by character
+    haps <- matrix( letters[ haps ], nrow = m_loci, ncol = n_ind )
+    expect_silent( 
+        hap_new <- pop_recomb_chr( haps, pos, map, G )
+    )
+    expect_equal( length( hap_new ), m_loci )
+    expect_true( all( hap_new %in% letters[ 1L : n_ind ] ) )
+})
+
+test_that( "pop_recomb works", {
+    # some recombination (reduced from 500 to speed up tests)
+    G <- 10
+    # simulate from whole human genome!
+    map <- recomb_map_hg38
+    # sample random positions per chr allowed by the map
+    m_loci_per_chr <- 6
+    # test case that skips chromosomes, which should be totally fine!
+    chrs <- c(2,5,21)
+    pos <- NULL
+    chr <- NULL
+    for ( chr_i in chrs ) {
+        map_i <- map[[ chr_i ]]
+        pos <- c( pos, sample( max( map_i$pos ), m_loci_per_chr ) )
+        chr <- c( chr, rep.int( chr_i, m_loci_per_chr ) )
+    }
+    bim <- tibble( chr = chr, pos = pos )
+    # and random haplotype data to go with this
+    n_ind_hap <- 10
+    m_loci <- m_loci_per_chr * length( chrs )
+    haps <- matrix( rbinom( m_loci * n_ind_hap, 1, 0.5 ), nrow = m_loci, ncol = n_ind_hap )
+    # number of desired inidividuals is a different value altogether
+    n_ind <- 7
+
+    # a successful run
+    expect_silent( 
+        X <- pop_recomb( haps, bim, map, G, n_ind, geno = TRUE )
+    )
+    expect_true( is.matrix( X ) )
+    expect_equal( nrow( X ), m_loci )
+    expect_equal( ncol( X ), n_ind )
+    expect_true( !anyNA( X ) )
+    expect_true( all( X %in% 0:2 ) )
+
+    # deterministic version, where the population has a single haplotype (since here `geno=TRUE`, everything is doubled)
+    haps1 <- haps[ , 1L, drop = FALSE ]
+    expect_silent( 
+        X <- pop_recomb( haps1, bim, map, G, n_ind, geno = TRUE )
+    )
+    x_exp <- matrix( 2L * haps1, nrow = m_loci, ncol = n_ind )
+    expect_equal( X, x_exp )
+    # trick version that just copies the same haplotype twice, result should still be the same
+    expect_silent( 
+        X <- pop_recomb( cbind( haps1, haps1 ), bim, map, G, n_ind, geno = TRUE )
+    )
+    expect_equal( X, x_exp )
+    
+    # version that requests haplotypes (non-default)
+    expect_silent( 
+        X <- pop_recomb( haps, bim, map, G, n_ind, geno = FALSE )
+    )
+    expect_true( is.matrix( X ) )
+    expect_equal( nrow( X ), m_loci )
+    expect_equal( ncol( X ), n_ind )
+    expect_true( !anyNA( X ) )
+    expect_true( all( X %in% 0:1 ) )
+
+    # test non-numeric version
+    haps <- matrix( letters[ haps + 1L ], nrow = m_loci, ncol = n_ind_hap )
+    expect_silent( 
+        X <- pop_recomb( haps, bim, map, G, n_ind, geno = FALSE )
+    )
+    expect_true( is.matrix( X ) )
+    expect_equal( nrow( X ), m_loci )
+    expect_equal( ncol( X ), n_ind )
+    expect_true( !anyNA( X ) )
+    expect_true( all( X %in% letters[ 1:2 ] ) )
+
+    # deterministic version, where the population has a single haplotype (only makes sense if `geno=FALSE`), otherwise everything is doubled
+    haps1 <- haps[ , 1L, drop = FALSE ]
+    expect_silent( 
+        X <- pop_recomb( haps1, bim, map, G, n_ind, geno = FALSE )
+    )
+    x_exp <- matrix( haps1, nrow = m_loci, ncol = n_ind )
+    expect_equal( X, x_exp )
+    
+    # cause one particular weird error on purpose, make sure it's caught
+    bim$chr[1] <- 33 # out of range!
+    expect_error( 
+        pop_recomb( haps, bim, map, G, n_ind, geno = FALSE )
+    )
+})

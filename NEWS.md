@@ -148,3 +148,7 @@ First set of updates for simulating with recombination!
 
 - Added function `bim_add_posg` to calculate genetic positions from base pair positions and a genetic map.
 - In DESCRIPTION, updated citation to published paper.
+
+# simfam 1.1.8.9000 (2024-07-09)
+
+- Added function `pop_recomb` to simulate genotypes with linkage disequilibrium (LD) given a population of haplotypes, using a Li-Stephens-like model of haplotype copying
