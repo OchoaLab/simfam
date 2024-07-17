@@ -7,11 +7,14 @@
 #' Genotypes, when requested, are simply sums of independently drawn haplotype values.
 #'
 #' @inheritParams recomb_map_inds
-#' @param haps Matrix of haplotype values, one row per locus, one column per haplotype (half individual).  If `geno = TRUE` (default), these values should be numeric (recommended are zeroes and ones, indicating absence or presence of reference allele), but if `geno = FALSE` code will work with any values, including strings, which are just copied to outputs in blocks.
+#' @param haps Regular matrix or `BEDMatrix` object of haplotype values, one row per locus, one column per haplotype (half individual), or transposed if `loci_on_cols = TRUE` and for `BEDMatrix` objects.
+#' If `geno = TRUE` (default), these values should be numeric (recommended are zeroes and ones, indicating absence or presence of reference allele), but if `geno = FALSE` code will work with any values, including strings, which are just copied to outputs in blocks.
 #' @param bim The table of variants, which is a data.frame/tibble with at least two columns: `chr` (must be numeric between 1 and the maximum chromosome in `map` below for map to work) and `pos` (base pair position, usually an integer).
 #' @param G Number of generations since most recent common ancestor of population (to multiply standard recombination rate)
 #' @param n_ind Number of individuals (if geno = TRUE) or haplotypes (half individuals, if geno = FALSE) desired in output
 #' @param geno If `TRUE` (default) returns matrix of genotypes (values in 0,1,2 if `haps` is binary, otherwise double whatever the range of values in `haps` is), otherwise returns matrix of haplotypes (half individuals, same values of input `haps`)
+#' @param loci_on_cols If `TRUE`, `haps` has loci on columns and individuals on rows; if `FALSE` (default), loci are on rows and individuals on columns.
+#' If `haps` is a `BEDMatrix` object, `loci_on_cols` is ignored (set automatically to `TRUE` internally).
 #'
 #' @return A matrix with the same number of rows as `haps` and `n_ind` columns, with values copied from `haps` in (recombination) blocks if `geno = FALSE`, or sums of two such values drawn independently when `geno = TRUE`.
 #'
@@ -46,7 +49,7 @@
 #' H <- pop_recomb( haps, bim, map, G, n_ind, geno = FALSE )
 #'
 #' @export
-pop_recomb <- function( haps, bim, map, G, n_ind, geno = TRUE ) {
+pop_recomb <- function( haps, bim, map, G, n_ind, geno = TRUE, loci_on_cols = FALSE ) {
     # validations
     if ( missing( haps ) )
         stop( '`haps` is required!' )
@@ -61,7 +64,12 @@ pop_recomb <- function( haps, bim, map, G, n_ind, geno = TRUE ) {
     # haps validations in detail
     if ( !is.matrix( haps ) )
         stop( '`haps` must be a matrix!' )
-    if ( geno && !is.numeric( haps ) )
+    # same as general matrix but transposed
+    # this is always imposed for this particular format!
+    if ( 'BEDMatrix' %in% class( haps ) ) {
+        loci_on_cols <- TRUE
+        # BEDMatrix is always numeric, no need to test, but BEDMatrix object returns false to is.numeric, so we have to hack it this way
+    } else if ( geno && !is.numeric( haps ) )
         stop( '`haps` must be numeric if `geno = TRUE`!' )
     # bim validations in detail
     if ( !is.data.frame( bim ) )
@@ -70,8 +78,13 @@ pop_recomb <- function( haps, bim, map, G, n_ind, geno = TRUE ) {
         stop( '`bim` must have column `chr`!' )
     if ( !( 'pos' %in% names( bim ) ) )
         stop( '`bim` must have column `pos`!' )
-    if ( nrow( bim ) != nrow( haps ) )
-        stop( 'Number of rows of `bim` and `haps` must be equal!' )
+    if ( loci_on_cols ) {
+        if ( nrow( bim ) != ncol( haps ) )
+            stop( 'Number of rows of `bim` and columns of `haps` must be equal!' )
+    } else {
+        if ( nrow( bim ) != nrow( haps ) )
+            stop( 'Number of rows of `bim` and `haps` must be equal!' )
+    }
     # (in some parts chr could be non-numeric, but the genetic map does require them as indexes)
     if ( !is.numeric( bim$chr ) )
         stop( '`bim$chr` must be numeric!' )
@@ -99,11 +112,12 @@ pop_recomb <- function( haps, bim, map, G, n_ind, geno = TRUE ) {
     # simulate each chromosome in turn
     for ( chr_i in chrs ) {
         # subset haplotype data
-        indexes <- bim$chr == chr_i
-        haps_i <- haps[ indexes, , drop = FALSE ]
+        # NOTE: these have to be real indexes, not boolean vectors (i.e., without the "which", which won't work with internal `pop_recomb_chr`, though otherwise both versions work to subset stuff)
+        indexes <- which( bim$chr == chr_i )
         pos_i <- bim$pos[ indexes ]
         map_i <- map[[ chr_i ]]
         m_loci_i <- length( pos_i )
+        # NOTE: never subset `haps`, which is in general inefficient but extremely so when it is a BEDMatrix object.  It gets subset by internal `pop_recomb_chr` efficiently via `indexes_loci = indexes` option below
 
         # map_i validations in detail
         if ( !is.data.frame( map_i ) )
@@ -119,11 +133,11 @@ pop_recomb <- function( haps, bim, map, G, n_ind, geno = TRUE ) {
         # create data for every individual, which are IID from this distribution
         for ( j in 1L : n_ind ) {
             # draw one haplotype
-            hap_new <- pop_recomb_chr( haps_i, pos_i, map_i, G )
+            hap_new <- pop_recomb_chr( haps, pos_i, map_i, G, indexes_loci = indexes )
 
             if ( geno ) {
                 # draw again and add to create genotypes
-                hap_new <- hap_new + pop_recomb_chr( haps_i, pos_i, map_i, G )
+                hap_new <- hap_new + pop_recomb_chr( haps, pos_i, map_i, G, indexes_loci = indexes )
             }
 
             # store in matrix as desired

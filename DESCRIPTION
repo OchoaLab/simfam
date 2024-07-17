@@ -1,6 +1,6 @@
 Package: simfam
 Title: Simulate and Model Family Pedigrees with Structured Founders
-Version: 1.1.8.9000
+Version: 1.1.9.9000
 Authors@R: 
     person(given = "Alejandro",
 	   family = "Ochoa",
@@ -20,6 +20,8 @@ Suggests:
     testthat (>= 3.0.0),
     popkin,
     bnpsd (>= 1.3.2),
+    genio,
+    BEDMatrix,
     kinship2,
     RColorBrewer,
     knitr,

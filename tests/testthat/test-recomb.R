@@ -1,5 +1,13 @@
 library(tibble)
 
+# some tests require additional packages that aren't strictly required
+test_BEDMatrix <- FALSE
+if (suppressMessages(suppressWarnings(require(BEDMatrix)))) {
+    if (suppressMessages(suppressWarnings(require(genio)))) {
+        test_BEDMatrix <- TRUE
+    }
+}
+
 # validates structure of a single chromosome (tibble)
 # flexible for cases where breaks are known and cases where they aren't
 validate_chr <- function( chr, leng, breaks = NULL, ancs1 = NULL, ancs2 = NULL, ancs_set = NULL, mapped = FALSE ) {
@@ -840,6 +848,9 @@ test_that( "pop_recomb_chr works", {
     # and random haplotype data to go with this
     n_ind <- 9
     haps <- matrix( rbinom( m_loci * n_ind, 1, 0.5 ), nrow = m_loci, ncol = n_ind )
+    # for subsetting tests
+    indexes_loci <- c(2, 3, 7)
+    m_loci_subset <- length( indexes_loci )
 
     # test a trivial single haplotype as input, so answer is deterministic
     # (but must pass as matrix, hence `drop = FALSE`)
@@ -849,13 +860,55 @@ test_that( "pop_recomb_chr works", {
     # equal as vectors
     expect_equal( hap_new, haps[ , 1 ] )
 
+    # test subsetting with indexes
+    expect_silent( 
+        hap_new <- pop_recomb_chr( haps[, 1, drop = FALSE ], pos[ indexes_loci ], map, G, indexes_loci = indexes_loci )
+    )
+    expect_equal( hap_new, haps[ indexes_loci, 1 ] )
+
     # now proper full dataset, intended binary case
     expect_silent( 
         hap_new <- pop_recomb_chr( haps, pos, map, G )
     )
     expect_equal( length( hap_new ), m_loci )
     expect_true( all( hap_new %in% c(0L, 1L) ) )
+    
+    # repeat with subset
+    expect_silent( 
+        hap_new <- pop_recomb_chr( haps, pos[ indexes_loci ], map, G, indexes_loci = indexes_loci )
+    )
+    expect_equal( length( hap_new ), m_loci_subset )
+    expect_true( all( hap_new %in% c(0L, 1L) ) )
 
+    if ( test_BEDMatrix ) {
+        # test version that loads the haplotypes using BEDMatrix
+        # this requires data that can be written to BEDMatrix, so the weird cases below (higher numbers, characters) don't get tested this way
+        
+        # first write the exact same simulated haplotypes to file
+        name_haps <- tempfile('delete-me-random-test') # output name without extensions!
+        write_plink( name_haps, haps, verbose = FALSE )
+        # reload as BEDMatrix
+        haps_BM <- suppressMessages( suppressWarnings( BEDMatrix( name_haps ) ) )
+        
+        # now repeat test!
+        # the output is of course random, so it will be different, but it should at least be correct
+        expect_silent( 
+            hap_new <- pop_recomb_chr( haps_BM, pos, map, G )
+        )
+        expect_equal( length( hap_new ), m_loci )
+        expect_true( all( hap_new %in% c(0L, 1L) ) )
+
+        # and subset version
+        expect_silent( 
+            hap_new <- pop_recomb_chr( haps_BM, pos[ indexes_loci ], map, G, indexes_loci = indexes_loci )
+        )
+        expect_equal( length( hap_new ), m_loci_subset )
+        expect_true( all( hap_new %in% c(0L, 1L) ) )
+        
+        # delete all three outputs (bed/bim/fam) when done
+        delete_files_plink( name_haps )
+    }
+    
     # a weird artificial case that identifies the ancestor only, by number
     n_ind <- 3L
     haps <- t( matrix( 1 : n_ind, nrow = n_ind, ncol = m_loci ) )
@@ -908,6 +961,30 @@ test_that( "pop_recomb works", {
     expect_true( !anyNA( X ) )
     expect_true( all( X %in% 0:2 ) )
 
+    if ( test_BEDMatrix ) {
+        # test version that loads the haplotypes using BEDMatrix
+        
+        # first write the exact same simulated haplotypes to file
+        name_haps <- tempfile('delete-me-random-test') # output name without extensions!
+        write_plink( name_haps, haps, verbose = FALSE )
+        # reload as BEDMatrix
+        haps_BM <- suppressMessages( suppressWarnings( BEDMatrix( name_haps ) ) )
+        
+        # now repeat test!
+        # the output is of course random, so it will be different, but it should at least be correct
+        expect_silent( 
+            X <- pop_recomb( haps_BM, bim, map, G, n_ind, geno = TRUE )
+        )
+        expect_true( is.matrix( X ) )
+        expect_equal( nrow( X ), m_loci )
+        expect_equal( ncol( X ), n_ind )
+        expect_true( !anyNA( X ) )
+        expect_true( all( X %in% 0:2 ) )
+
+        # delete all three outputs (bed/bim/fam) when done
+        delete_files_plink( name_haps )
+    }
+    
     # deterministic version, where the population has a single haplotype (since here `geno=TRUE`, everything is doubled)
     haps1 <- haps[ , 1L, drop = FALSE ]
     expect_silent( 
@@ -921,7 +998,28 @@ test_that( "pop_recomb works", {
     )
     expect_equal( X, x_exp )
     
+    if ( test_BEDMatrix ) {
+        # test version that loads the haplotypes using BEDMatrix
+        # test the trick version where there are two identical haplotypes, which should give the same deterministic result as before
+        
+        # first write the exact same simulated haplotypes to file
+        name_haps <- tempfile('delete-me-random-test') # output name without extensions!
+        write_plink( name_haps, cbind( haps1, haps1 ), verbose = FALSE )
+        # reload as BEDMatrix
+        haps_BM <- suppressMessages( suppressWarnings( BEDMatrix( name_haps ) ) )
+        
+        # now repeat test!
+        expect_silent( 
+            X <- pop_recomb( haps_BM, bim, map, G, n_ind, geno = TRUE )
+        )
+        expect_equal( X, x_exp )
+
+        # delete all three outputs (bed/bim/fam) when done
+        delete_files_plink( name_haps )
+    }
+    
     # version that requests haplotypes (non-default)
+    # no BEDMatrix version of test since this isn't expected to fail if BEDMatrix geno=TRUE succeeded (given that the non-BEDMatrix geno=FALSE below also succeeds)
     expect_silent( 
         X <- pop_recomb( haps, bim, map, G, n_ind, geno = FALSE )
     )

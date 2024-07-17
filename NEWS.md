@@ -152,3 +152,7 @@ First set of updates for simulating with recombination!
 # simfam 1.1.8.9000 (2024-07-09)
 
 - Added function `pop_recomb` to simulate genotypes with linkage disequilibrium (LD) given a population of haplotypes, using a Li-Stephens-like model of haplotype copying
+
+# simfam 1.1.9.9000 (2024-07-17)
+
+- Function `pop_recomb` added support for option `haps` to be a `BEDMatrix` object, and added option `loci_on_cols` to accept a transposed `haps` input.

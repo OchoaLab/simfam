@@ -4,10 +4,11 @@
 \alias{pop_recomb}
 \title{Simulate genotypes with linkage disequilibrium (LD) given a population of haplotypes, using a Li-Stephens-like model of haplotype copying}
 \usage{
-pop_recomb(haps, bim, map, G, n_ind, geno = TRUE)
+pop_recomb(haps, bim, map, G, n_ind, geno = TRUE, loci_on_cols = FALSE)
 }
 \arguments{
-\item{haps}{Matrix of haplotype values, one row per locus, one column per haplotype (half individual).  If \code{geno = TRUE} (default), these values should be numeric (recommended are zeroes and ones, indicating absence or presence of reference allele), but if \code{geno = FALSE} code will work with any values, including strings, which are just copied to outputs in blocks.}
+\item{haps}{Regular matrix or \code{BEDMatrix} object of haplotype values, one row per locus, one column per haplotype (half individual), or transposed if \code{loci_on_cols = TRUE} and for \code{BEDMatrix} objects.
+If \code{geno = TRUE} (default), these values should be numeric (recommended are zeroes and ones, indicating absence or presence of reference allele), but if \code{geno = FALSE} code will work with any values, including strings, which are just copied to outputs in blocks.}
 
 \item{bim}{The table of variants, which is a data.frame/tibble with at least two columns: \code{chr} (must be numeric between 1 and the maximum chromosome in \code{map} below for map to work) and \code{pos} (base pair position, usually an integer).}
 
@@ -18,6 +19,9 @@ pop_recomb(haps, bim, map, G, n_ind, geno = TRUE)
 \item{n_ind}{Number of individuals (if geno = TRUE) or haplotypes (half individuals, if geno = FALSE) desired in output}
 
 \item{geno}{If \code{TRUE} (default) returns matrix of genotypes (values in 0,1,2 if \code{haps} is binary, otherwise double whatever the range of values in \code{haps} is), otherwise returns matrix of haplotypes (half individuals, same values of input \code{haps})}
+
+\item{loci_on_cols}{If \code{TRUE}, \code{haps} has loci on columns and individuals on rows; if \code{FALSE} (default), loci are on rows and individuals on columns.
+If \code{haps} is a \code{BEDMatrix} object, \code{loci_on_cols} is ignored (set automatically to \code{TRUE} internally).}
 }
 \value{
 A matrix with the same number of rows as \code{haps} and \code{n_ind} columns, with values copied from \code{haps} in (recombination) blocks if \code{geno = FALSE}, or sums of two such values drawn independently when \code{geno = TRUE}.
