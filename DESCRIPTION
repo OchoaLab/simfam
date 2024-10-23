@@ -1,6 +1,6 @@
 Package: simfam
 Title: Simulate and Model Family Pedigrees with Structured Founders
-Version: 1.1.9.9000
+Version: 1.1.10.9000
 Authors@R: 
     person(given = "Alejandro",
 	   family = "Ochoa",
@@ -15,7 +15,9 @@ RoxygenNote: 7.3.2
 Imports:
     Rcpp,
     stats,
-    tibble
+    tibble,
+    dplyr,
+    tidyselect
 Suggests: 
     testthat (>= 3.0.0),
     popkin,

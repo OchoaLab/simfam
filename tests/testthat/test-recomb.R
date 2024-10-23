@@ -961,6 +961,19 @@ test_that( "pop_recomb works", {
     expect_true( !anyNA( X ) )
     expect_true( all( X %in% 0:2 ) )
 
+    # version that simulates only a subset of genome available
+    m_loci_subset <- 7
+    indexes_loci <- sample.int( m_loci, m_loci_subset )
+    # repeat earlier test otherwise
+    expect_silent( 
+        X <- pop_recomb( haps, bim, map, G, n_ind, geno = TRUE, indexes_loci = indexes_loci )
+    )
+    expect_true( is.matrix( X ) )
+    expect_equal( nrow( X ), m_loci_subset )
+    expect_equal( ncol( X ), n_ind )
+    expect_true( !anyNA( X ) )
+    expect_true( all( X %in% 0:2 ) )
+    
     if ( test_BEDMatrix ) {
         # test version that loads the haplotypes using BEDMatrix
         
@@ -981,6 +994,16 @@ test_that( "pop_recomb works", {
         expect_true( !anyNA( X ) )
         expect_true( all( X %in% 0:2 ) )
 
+        # repeat subset version too
+        expect_silent( 
+            X <- pop_recomb( haps_BM, bim, map, G, n_ind, geno = TRUE, indexes_loci = indexes_loci )
+        )
+        expect_true( is.matrix( X ) )
+        expect_equal( nrow( X ), m_loci_subset )
+        expect_equal( ncol( X ), n_ind )
+        expect_true( !anyNA( X ) )
+        expect_true( all( X %in% 0:2 ) )
+        
         # delete all three outputs (bed/bim/fam) when done
         delete_files_plink( name_haps )
     }
@@ -1054,3 +1077,70 @@ test_that( "pop_recomb works", {
         pop_recomb( haps, bim, map, G, n_ind, geno = FALSE )
     )
 })
+
+validate_inds_tidy <- function( inds, ids, G, map, founders_only = FALSE ) {
+    founders_haps <- c(
+        paste0( ids[[1]], '_pat' ),
+        paste0( ids[[1]], '_mat' )
+    )
+    if ( ! founders_only ) {
+        expect_true( all( inds$ind %in% ids[[ G ]] ) )
+        expect_true( all( inds$parent %in% c('pat', 'mat') ) )
+    }
+    expect_true( all( inds$anc %in% founders_haps ) )
+    expect_true( all( inds$chr %in% 1 : length( map ) ) )
+    expect_true( all( inds$start >= 0 ) )
+    expect_true( all( inds$start <= inds$end ) )
+    # end should be below chr length, but that takes more work to construct, for now meh...
+}
+
+test_that( 'tidy_recomb_map_inds, recomb_founder_blocks_inherited work', {
+    # this creates toy data to use to test this function
+    # simulate from whole human genome!
+    map <- recomb_map_hg38
+    # simulate the ancestors of one person to 3 generations
+    Gp <- 3
+    data <- fam_ancestors( Gp )
+    fam <- data$fam
+    ids <- data$ids
+    # initialize founders
+    founders <- recomb_init_founders( ids[[ 1 ]], map )
+    # draw recombination breaks along pedigree, with coordinates in genetic distance (centiMorgans)
+    inds <- recomb_last_gen( founders, fam, ids )
+    # map recombination break coordinates to base pairs
+    inds <- recomb_map_inds( inds, map )
+    
+    # this is what we actually want to test
+    expect_silent(
+        inds2 <- tidy_recomb_map_inds( inds )
+    )
+    # the number of rows is variable because each corresponds to a recombination event, and those are random too
+    # and testing it exactly would amount to just rewriting the function
+    # instead let's make sure some basic properties make sense
+    validate_inds_tidy( inds2, ids, Gp, map )
+    
+    # now apply that data to this other function
+    expect_silent(
+        founders_with_descendants <- recomb_founder_blocks_inherited( inds2 )
+    )
+    # output is very similar
+    validate_inds_tidy( founders_with_descendants, ids, Gp, map, founders_only = TRUE )
+
+    # repeat tests with a more random pedigree with multiple individuals in the last generation
+    n <- 10
+    data <- sim_pedigree( n, G = Gp )
+    fam <- data$fam
+    ids <- data$ids
+    founders <- recomb_init_founders( ids[[ 1 ]], map )
+    inds <- recomb_last_gen( founders, fam, ids )
+    inds <- recomb_map_inds( inds, map )
+    expect_silent(
+        inds2 <- tidy_recomb_map_inds( inds )
+    )
+    validate_inds_tidy( inds2, ids, Gp, map )
+    expect_silent(
+        founders_with_descendants <- recomb_founder_blocks_inherited( inds2 )
+    )
+    validate_inds_tidy( founders_with_descendants, ids, Gp, map, founders_only = TRUE )
+})
+

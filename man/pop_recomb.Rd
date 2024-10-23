@@ -4,13 +4,22 @@
 \alias{pop_recomb}
 \title{Simulate genotypes with linkage disequilibrium (LD) given a population of haplotypes, using a Li-Stephens-like model of haplotype copying}
 \usage{
-pop_recomb(haps, bim, map, G, n_ind, geno = TRUE, loci_on_cols = FALSE)
+pop_recomb(
+  haps,
+  bim,
+  map,
+  G,
+  n_ind,
+  geno = TRUE,
+  loci_on_cols = FALSE,
+  indexes_loci = NULL
+)
 }
 \arguments{
 \item{haps}{Regular matrix or \code{BEDMatrix} object of haplotype values, one row per locus, one column per haplotype (half individual), or transposed if \code{loci_on_cols = TRUE} and for \code{BEDMatrix} objects.
 If \code{geno = TRUE} (default), these values should be numeric (recommended are zeroes and ones, indicating absence or presence of reference allele), but if \code{geno = FALSE} code will work with any values, including strings, which are just copied to outputs in blocks.}
 
-\item{bim}{The table of variants, which is a data.frame/tibble with at least two columns: \code{chr} (must be numeric between 1 and the maximum chromosome in \code{map} below for map to work) and \code{pos} (base pair position, usually an integer).}
+\item{bim}{The table of variants of \code{haps}, which is a data.frame/tibble with at least two columns: \code{chr} (must be numeric between 1 and the maximum chromosome in \code{map} below for map to work) and \code{pos} (base pair position, usually an integer).}
 
 \item{map}{The genetic map, a list of chromosomes each of which is a data.frame/tibble with columns \code{pos} for base pair position and \code{posg} for genetic position.}
 
@@ -22,6 +31,9 @@ If \code{geno = TRUE} (default), these values should be numeric (recommended are
 
 \item{loci_on_cols}{If \code{TRUE}, \code{haps} has loci on columns and individuals on rows; if \code{FALSE} (default), loci are on rows and individuals on columns.
 If \code{haps} is a \code{BEDMatrix} object, \code{loci_on_cols} is ignored (set automatically to \code{TRUE} internally).}
+
+\item{indexes_loci}{Vector of indexes of loci to simulate, to request to simulate only a subset of the loci in \code{haps}/\code{bim}.
+Default \code{NULL} simulates all loci in \code{haps}/\code{bim}.}
 }
 \value{
 A matrix with the same number of rows as \code{haps} and \code{n_ind} columns, with values copied from \code{haps} in (recombination) blocks if \code{geno = FALSE}, or sums of two such values drawn independently when \code{geno = TRUE}.

@@ -9,12 +9,14 @@
 #' @inheritParams recomb_map_inds
 #' @param haps Regular matrix or `BEDMatrix` object of haplotype values, one row per locus, one column per haplotype (half individual), or transposed if `loci_on_cols = TRUE` and for `BEDMatrix` objects.
 #' If `geno = TRUE` (default), these values should be numeric (recommended are zeroes and ones, indicating absence or presence of reference allele), but if `geno = FALSE` code will work with any values, including strings, which are just copied to outputs in blocks.
-#' @param bim The table of variants, which is a data.frame/tibble with at least two columns: `chr` (must be numeric between 1 and the maximum chromosome in `map` below for map to work) and `pos` (base pair position, usually an integer).
+#' @param bim The table of variants of `haps`, which is a data.frame/tibble with at least two columns: `chr` (must be numeric between 1 and the maximum chromosome in `map` below for map to work) and `pos` (base pair position, usually an integer).
 #' @param G Number of generations since most recent common ancestor of population (to multiply standard recombination rate)
 #' @param n_ind Number of individuals (if geno = TRUE) or haplotypes (half individuals, if geno = FALSE) desired in output
 #' @param geno If `TRUE` (default) returns matrix of genotypes (values in 0,1,2 if `haps` is binary, otherwise double whatever the range of values in `haps` is), otherwise returns matrix of haplotypes (half individuals, same values of input `haps`)
 #' @param loci_on_cols If `TRUE`, `haps` has loci on columns and individuals on rows; if `FALSE` (default), loci are on rows and individuals on columns.
 #' If `haps` is a `BEDMatrix` object, `loci_on_cols` is ignored (set automatically to `TRUE` internally).
+#' @param indexes_loci Vector of indexes of loci to simulate, to request to simulate only a subset of the loci in `haps`/`bim`.
+#' Default `NULL` simulates all loci in `haps`/`bim`.
 #'
 #' @return A matrix with the same number of rows as `haps` and `n_ind` columns, with values copied from `haps` in (recombination) blocks if `geno = FALSE`, or sums of two such values drawn independently when `geno = TRUE`.
 #'
@@ -49,7 +51,7 @@
 #' H <- pop_recomb( haps, bim, map, G, n_ind, geno = FALSE )
 #'
 #' @export
-pop_recomb <- function( haps, bim, map, G, n_ind, geno = TRUE, loci_on_cols = FALSE ) {
+pop_recomb <- function( haps, bim, map, G, n_ind, geno = TRUE, loci_on_cols = FALSE, indexes_loci = NULL ) {
     # validations
     if ( missing( haps ) )
         stop( '`haps` is required!' )
@@ -78,11 +80,12 @@ pop_recomb <- function( haps, bim, map, G, n_ind, geno = TRUE, loci_on_cols = FA
         stop( '`bim` must have column `chr`!' )
     if ( !( 'pos' %in% names( bim ) ) )
         stop( '`bim` must have column `pos`!' )
+    m_loci <- nrow( bim )
     if ( loci_on_cols ) {
-        if ( nrow( bim ) != ncol( haps ) )
+        if ( m_loci != ncol( haps ) )
             stop( 'Number of rows of `bim` and columns of `haps` must be equal!' )
     } else {
-        if ( nrow( bim ) != nrow( haps ) )
+        if ( m_loci != nrow( haps ) )
             stop( 'Number of rows of `bim` and `haps` must be equal!' )
     }
     # (in some parts chr could be non-numeric, but the genetic map does require them as indexes)
@@ -105,6 +108,15 @@ pop_recomb <- function( haps, bim, map, G, n_ind, geno = TRUE, loci_on_cols = FA
         stop( '`n_ind` must be numeric!' )
     if ( length( n_ind ) != 1L )
         stop( '`n_ind` must be scalar!' )
+    # indexes_loci validation
+    if ( !is.null( indexes_loci ) ) {
+        if ( !is.numeric( indexes_loci ) )
+            stop( '`indexes_loci` must be numeric!' )
+        if ( min( indexes_loci ) < 1 )
+            stop( 'Minimum `indexes_loci` must be equal or greater than 1!' )
+        if ( max ( indexes_loci ) > m_loci )
+            stop( 'Maximum `indexes_loci` must be equal or less than the number of loci!' )
+    }
     
     # final output to concatenate to
     X <- NULL
@@ -114,6 +126,13 @@ pop_recomb <- function( haps, bim, map, G, n_ind, geno = TRUE, loci_on_cols = FA
         # subset haplotype data
         # NOTE: these have to be real indexes, not boolean vectors (i.e., without the "which", which won't work with internal `pop_recomb_chr`, though otherwise both versions work to subset stuff)
         indexes <- which( bim$chr == chr_i )
+        # subset further if requested
+        if ( !is.null( indexes_loci ) ) {
+            indexes <- intersect( indexes, indexes_loci )
+            # in this case the intersection could be empty, skip chr quietly if so
+            if ( length( indexes ) == 0 )
+                next
+        }
         pos_i <- bim$pos[ indexes ]
         map_i <- map[[ chr_i ]]
         m_loci_i <- length( pos_i )
