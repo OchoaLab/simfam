@@ -10,7 +10,8 @@ recomb_haplo_inds(inds, haplo, ret_anc = FALSE)
 \item{inds}{A list of individuals in the same format as the output of \code{\link[=recomb_fam]{recomb_fam()}} after being processed with \code{\link[=recomb_map_inds]{recomb_map_inds()}}.
 More specifically, each individual is a list with two haploid individuals named \code{pat} and \code{mat}, each of which is a list of chromosomes (always identified by number, but may also be named arbitrarily), each of which is a data.frame/tibble with implicit ranges (\code{pos} is end coordinates in base pairs; start is the end of the previous block plus one, 1 for the first block) and ancestors \code{anc} as strings.}
 
-\item{haplo}{The ancestral haplotypes, which is a list of chromosomes, each of which is a list with two named elements: \code{X} is a matrix of haplotype markers (loci along rows, ancestral individuals along columns, which must be named as in \code{anc} strings in \code{inds} above), and \code{pos} is a vector of locus positions in base pair coordinates.}
+\item{haplo}{The ancestral haplotypes, which is a list of chromosomes, each of which is a list with two named elements: \code{X} is a matrix of haplotype markers (loci along rows, ancestral individuals along columns, which must be named as in \code{anc} strings in \code{inds} above), and \code{pos} is a vector of locus positions in base pair coordinates.
+Haplotype matrix can be a sparse matrix from the package \code{Matrix}.}
 
 \item{ret_anc}{If \code{TRUE}, returns local ancestries (per position) along with haplotypes, otherwise only haplotypes are returned.}
 }

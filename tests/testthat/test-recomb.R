@@ -96,6 +96,17 @@ validate_inds <- function( inds, ids, lengs, ancs_set = NULL, mapped = FALSE ) {
     }
 }
 
+validate_geno <- function( X, m_loci, n_ind, int = TRUE, vals = 0L : 2L ) {
+    expect_true( is.matrix( X ) )
+    expect_equal( nrow( X ), m_loci )
+    expect_equal( ncol( X ), n_ind )
+    expect_true( !anyNA( X ) )
+    expect_true( all( X %in% vals ) )
+    # not true in all cases
+    if ( int ) 
+        expect_true( is.integer( X ) )
+}
+
 test_that( "recomb_breaks works", {
     # try invalid inputs, expect errors
     expect_error( recomb_breaks() )
@@ -638,7 +649,7 @@ test_that( "recomb_haplo_hap, recomb_haplo_ind, recomb_haplo_inds, recomb_geno_i
     m_loci <- 10L
     for ( chr in 1L : n_chr ) {
         # draw positions
-        pos_chr <- sample.int( max( map[[ chr ]]$pos ), m_loci )
+        pos_chr <- sort( sample.int( max( map[[ chr ]]$pos ), m_loci ) )
         # draw haplotypes
         X_chr <- matrix(
             rbinom( m_loci * n_ind, 1L, 0.5 ),
@@ -722,16 +733,21 @@ test_that( "recomb_haplo_hap, recomb_haplo_ind, recomb_haplo_inds, recomb_geno_i
     # these should be the same!
     expect_equal( data_inds_anc$child, data_ind_anc )
 
+    ## # quick tests where inputs are missing chromosomes
+    ## # only makes sense to delete one that isn't the last one, let's do the first
+    ## haplo_del <- haplo
+    ## haplo_del[[1]] <- NULL
+    ## expect_silent(
+    ##     data_inds <- recomb_haplo_inds( inds, haplo_del )
+    ## )
+    ## expect_true( is.list( data_inds ) )
+    ## expect_equal( names( data_inds ), fam$id )
+    
     # test function that converts output of previous functions into genotype matrices
     expect_silent(
         X <- recomb_geno_inds( data_inds )
     )
-    expect_true( is.matrix( X ) )
-    expect_equal( ncol( X ), nrow( fam ) )
-    expect_equal( nrow( X ), m_loci * n_chr )
-    # true because of the way input `haplo` above was simulated
-    expect_true( is.integer( X ) )
-    expect_true( all( X %in% 0L:2L ) )
+    validate_geno( X, m_loci * n_chr, nrow( fam ) )
 
     # make sure this works and output is identical when data with ancestries is passed
     expect_silent(
@@ -757,11 +773,7 @@ test_that( "recomb_haplo_hap, recomb_haplo_ind, recomb_haplo_inds, recomb_geno_i
     expect_equal( names( X_anc ), pops )
     for ( pop in pops ) {
         X_pop <- X_anc[[ pop ]]
-        expect_true( is.matrix( X_pop ) )
-        expect_equal( ncol( X_pop ), nrow( fam ) )
-        expect_equal( nrow( X_pop ), m_loci * n_chr )
-        expect_true( is.integer( X_pop ) )
-        expect_true( all( X_pop %in% 0L:2L ) )
+        validate_geno( X_pop, m_loci * n_chr, nrow( fam ) )
     }
     
     # simulate a case where each parent has a single ancestry (both of its haplotypes), so the child's dosages are 1 everywhere!
@@ -778,10 +790,7 @@ test_that( "recomb_haplo_hap, recomb_haplo_ind, recomb_haplo_inds, recomb_geno_i
     expect_equal( names( X_anc ), pops )
     for ( pop in pops ) {
         X_pop <- X_anc[[ pop ]]
-        expect_true( is.matrix( X_pop ) )
-        expect_equal( ncol( X_pop ), nrow( fam ) )
-        expect_equal( nrow( X_pop ), m_loci * n_chr )
-        expect_true( is.integer( X_pop ) )
+        validate_geno( X_pop, m_loci * n_chr, nrow( fam ) )
         # for parents, none are 1
         expect_true( all( X_pop[ , 1L:2L ] != 1L ) )
         # for child, all are 1
@@ -838,13 +847,13 @@ test_that( "bim_add_posg works", {
 })
 
 test_that( "pop_recomb_chr works", {
-    # some recombination (reduced from 500 to speed up tests)
+    # some recombination
     G <- 10
     # need single chromosome, but let's pick a realistic one
     map <- recomb_map_hg38[[ 22L ]]
     # sample random positions allowed by the map
     m_loci <- 10
-    pos <- sample( max( map$pos ), m_loci )
+    pos <- sort( sample( max( map$pos ), m_loci ) )
     # and random haplotype data to go with this
     n_ind <- 9
     haps <- matrix( rbinom( m_loci * n_ind, 1, 0.5 ), nrow = m_loci, ncol = n_ind )
@@ -928,7 +937,7 @@ test_that( "pop_recomb_chr works", {
 })
 
 test_that( "pop_recomb works", {
-    # some recombination (reduced from 500 to speed up tests)
+    # some recombination
     G <- 10
     # simulate from whole human genome!
     map <- recomb_map_hg38
@@ -940,7 +949,7 @@ test_that( "pop_recomb works", {
     chr <- NULL
     for ( chr_i in chrs ) {
         map_i <- map[[ chr_i ]]
-        pos <- c( pos, sample( max( map_i$pos ), m_loci_per_chr ) )
+        pos <- c( pos, sort( sample( max( map_i$pos ), m_loci_per_chr ) ) )
         chr <- c( chr, rep.int( chr_i, m_loci_per_chr ) )
     }
     bim <- tibble( chr = chr, pos = pos )
@@ -948,18 +957,14 @@ test_that( "pop_recomb works", {
     n_ind_hap <- 10
     m_loci <- m_loci_per_chr * length( chrs )
     haps <- matrix( rbinom( m_loci * n_ind_hap, 1, 0.5 ), nrow = m_loci, ncol = n_ind_hap )
-    # number of desired inidividuals is a different value altogether
+    # number of desired individuals is a different value altogether
     n_ind <- 7
 
     # a successful run
     expect_silent( 
         X <- pop_recomb( haps, bim, map, G, n_ind, geno = TRUE )
     )
-    expect_true( is.matrix( X ) )
-    expect_equal( nrow( X ), m_loci )
-    expect_equal( ncol( X ), n_ind )
-    expect_true( !anyNA( X ) )
-    expect_true( all( X %in% 0:2 ) )
+    validate_geno( X, m_loci, n_ind )
 
     # version that simulates only a subset of genome available
     m_loci_subset <- 7
@@ -968,11 +973,7 @@ test_that( "pop_recomb works", {
     expect_silent( 
         X <- pop_recomb( haps, bim, map, G, n_ind, geno = TRUE, indexes_loci = indexes_loci )
     )
-    expect_true( is.matrix( X ) )
-    expect_equal( nrow( X ), m_loci_subset )
-    expect_equal( ncol( X ), n_ind )
-    expect_true( !anyNA( X ) )
-    expect_true( all( X %in% 0:2 ) )
+    validate_geno( X, m_loci_subset, n_ind )
     
     if ( test_BEDMatrix ) {
         # test version that loads the haplotypes using BEDMatrix
@@ -988,21 +989,13 @@ test_that( "pop_recomb works", {
         expect_silent( 
             X <- pop_recomb( haps_BM, bim, map, G, n_ind, geno = TRUE )
         )
-        expect_true( is.matrix( X ) )
-        expect_equal( nrow( X ), m_loci )
-        expect_equal( ncol( X ), n_ind )
-        expect_true( !anyNA( X ) )
-        expect_true( all( X %in% 0:2 ) )
+        validate_geno( X, m_loci, n_ind )
 
         # repeat subset version too
         expect_silent( 
             X <- pop_recomb( haps_BM, bim, map, G, n_ind, geno = TRUE, indexes_loci = indexes_loci )
         )
-        expect_true( is.matrix( X ) )
-        expect_equal( nrow( X ), m_loci_subset )
-        expect_equal( ncol( X ), n_ind )
-        expect_true( !anyNA( X ) )
-        expect_true( all( X %in% 0:2 ) )
+        validate_geno( X, m_loci_subset, n_ind )
         
         # delete all three outputs (bed/bim/fam) when done
         delete_files_plink( name_haps )
@@ -1046,22 +1039,14 @@ test_that( "pop_recomb works", {
     expect_silent( 
         X <- pop_recomb( haps, bim, map, G, n_ind, geno = FALSE )
     )
-    expect_true( is.matrix( X ) )
-    expect_equal( nrow( X ), m_loci )
-    expect_equal( ncol( X ), n_ind )
-    expect_true( !anyNA( X ) )
-    expect_true( all( X %in% 0:1 ) )
+    validate_geno( X, m_loci, n_ind, vals = 0L : 1L )
 
     # test non-numeric version
     haps <- matrix( letters[ haps + 1L ], nrow = m_loci, ncol = n_ind_hap )
     expect_silent( 
         X <- pop_recomb( haps, bim, map, G, n_ind, geno = FALSE )
     )
-    expect_true( is.matrix( X ) )
-    expect_equal( nrow( X ), m_loci )
-    expect_equal( ncol( X ), n_ind )
-    expect_true( !anyNA( X ) )
-    expect_true( all( X %in% letters[ 1:2 ] ) )
+    validate_geno( X, m_loci, n_ind, vals = letters[ 1:2 ], int = FALSE )
 
     # deterministic version, where the population has a single haplotype (only makes sense if `geno=FALSE`), otherwise everything is doubled
     haps1 <- haps[ , 1L, drop = FALSE ]
@@ -1127,7 +1112,7 @@ test_that( 'tidy_recomb_map_inds, recomb_founder_blocks_inherited work', {
     validate_inds_tidy( founders_with_descendants, ids, Gp, map, founders_only = TRUE )
 
     # repeat tests with a more random pedigree with multiple individuals in the last generation
-    n <- 10
+    n <- 20
     data <- sim_pedigree( n, G = Gp )
     fam <- data$fam
     ids <- data$ids
@@ -1142,5 +1127,159 @@ test_that( 'tidy_recomb_map_inds, recomb_founder_blocks_inherited work', {
         founders_with_descendants <- recomb_founder_blocks_inherited( inds2 )
     )
     validate_inds_tidy( founders_with_descendants, ids, Gp, map, founders_only = TRUE )
+})
+
+test_that( "geno_last_gen_admix_recomb works", {
+    # some recombination
+    G <- 10L
+    # simulate all chromosomes between 1 and the max!  Code is unhappy otherwise
+    n_chr <- 3L
+    chrs <- 1L : n_chr
+    # simulate from those chromosomes only
+    map <- recomb_map_hg38[ chrs ]
+    # sample random positions per chr allowed by the map
+    m_loci_per_chr <- 6L
+    pos <- NULL
+    chr <- NULL
+    for ( chr_i in chrs ) {
+        map_i <- map[[ chr_i ]]
+        pos <- c( pos, sort( sample( max( map_i$pos ), m_loci_per_chr ) ) )
+        chr <- c( chr, rep.int( chr_i, m_loci_per_chr ) )
+    }
+    bim <- tibble( chr = chr, pos = pos )
+    # and random haplotype data to go with this
+    n_ind_hap <- 10
+    m_loci <- m_loci_per_chr * length( chrs )
+    haps_afr <- matrix( rbinom( m_loci * n_ind_hap, 1L, 0.5 ), nrow = m_loci, ncol = n_ind_hap )
+    haps_eur <- matrix( rbinom( m_loci * n_ind_hap, 1L, 0.5 ), nrow = m_loci, ncol = n_ind_hap )
+    anc_haps <- list(
+        'AFR' = haps_afr,
+        'EUR' = haps_eur
+    )
+    
+    # simulate a very small family with one individual, 2 parents, 4 implicit grandparents
+    Gp <- 2L
+    data <- fam_ancestors( Gp )
+    fam <- data$fam
+    ids <- data$ids
+    # number of output individuals in this simulation
+    n_ind <- length( ids[[ Gp ]] )
+    # select ancestries for each of the 4 founder haplotypes (unadmixed)
+    # make it non-random to most easily ensure that there's at least one of each ancestry
+    founders_anc <- c('AFR', 'EUR', 'AFR', 'EUR')
+    # set names of founders with _pat/mat, needed to match recombination structure
+    # order is odd but choices were random so that doesn't matter
+    names( founders_anc ) <- c(
+        paste0( ids[[1]], '_pat' ),
+        paste0( ids[[1]], '_mat' )
+    )
+    
+    # a successful run
+    expect_silent( 
+        data <- geno_last_gen_admix_recomb( anc_haps, bim, map, G, fam, ids, founders_anc )
+    )
+    expect_true( is.list( data ) )
+    expect_equal( names( data ), c('X', 'Ls', 'haplos') )
+    Ls <- data$Ls
+    # NOTE: in none of these cases do we test `haplos` directly, though there are indirect tests through X and Ls so meh
+    # genotypes and local ancestry have very similar formats
+    validate_geno( data$X, m_loci, n_ind, int = FALSE )
+    # local ancestry object
+    expect_true( is.list( Ls ) )
+    expect_equal( names( Ls ), c('AFR', 'EUR') )
+    # test both now, as genotypes
+    validate_geno( Ls$AFR, m_loci, n_ind )
+    validate_geno( Ls$EUR, m_loci, n_ind )
+
+    # try to break things forcing all ancestors of a single ancestry
+    founders_anc_no_admix <- rep.int( 'AFR', length( founders_anc ) )
+    # set names of founders with _pat/mat, needed to match recombination structure
+    # order is odd but choices were random so that doesn't matter
+    names( founders_anc_no_admix ) <- c(
+        paste0( ids[[1]], '_pat' ),
+        paste0( ids[[1]], '_mat' )
+    )
+    # repeat test, except for a single ancestry
+    expect_silent( 
+        data <- geno_last_gen_admix_recomb( anc_haps, bim, map, G, fam, ids, founders_anc_no_admix )
+    )
+    expect_true( is.list( data ) )
+    expect_equal( names( data ), c('X', 'Ls', 'haplos') )
+    Ls <- data$Ls
+    validate_geno( data$X, m_loci, n_ind, int = FALSE )
+    expect_true( is.list( Ls ) )
+    expect_equal( names( Ls ), 'AFR' )
+    validate_geno( Ls$AFR, m_loci, n_ind, vals = 2L )
+
+    # test cases where all haplotypes are 1, so non-1s reveal unset values
+    anc_haps_ones <- list(
+        AFR = matrix( 1L, nrow = m_loci, ncol = 1L ),
+        EUR = matrix( 1L, nrow = m_loci, ncol = 1L )
+    )
+    expect_silent( 
+        data_ones <- geno_last_gen_admix_recomb( anc_haps_ones, bim, map, G, fam, ids, founders_anc )
+    )
+    expect_true( is.list( data_ones ) )
+    expect_equal( names( data_ones ), c('X', 'Ls', 'haplos') )
+    Ls <- data_ones$Ls
+    # for this data all genotypes must be 2, those that aren't weren't set correctly!
+    validate_geno( data_ones$X, m_loci, n_ind, int = FALSE, vals = 2 )
+    expect_true( is.list( Ls ) )
+    expect_equal( names( Ls ), c('AFR', 'EUR') )
+    validate_geno( Ls$AFR, m_loci, n_ind )
+    validate_geno( Ls$EUR, m_loci, n_ind )
+
+    # do a test with predicable fixed haplotypes by ancestry, so answer is fixed too
+    anc_haps_fixed <- list(
+        AFR = matrix( 1L, nrow = m_loci, ncol = 1L ),
+        EUR = matrix( 0L, nrow = m_loci, ncol = 1L )
+    )
+    expect_silent( 
+        data <- geno_last_gen_admix_recomb( anc_haps_fixed, bim, map, G, fam, ids, founders_anc )
+    )
+    expect_true( is.list( data ) )
+    expect_equal( names( data ), c('X', 'Ls', 'haplos') )
+    Ls <- data$Ls
+    # genotypes and local ancestry have very similar formats
+    validate_geno( data$X, m_loci, n_ind, int = FALSE )
+    # local ancestry object
+    expect_true( is.list( Ls ) )
+    expect_equal( names( Ls ), c('AFR', 'EUR') )
+    # test both now, as genotypes
+    validate_geno( Ls$AFR, m_loci, n_ind )
+    validate_geno( Ls$EUR, m_loci, n_ind )
+    # in this case genotypes reflect ancestry exactly, so we expect these equivalences
+    expect_equal( data$X, Ls$AFR )
+    expect_equal( data$X, 2 - Ls$EUR )
+    
+    if ( test_BEDMatrix ) {
+        # test version that loads the haplotypes using BEDMatrix
+        # test only one version with deterministic outputs
+        
+        # first write the exact same simulated haplotypes to file
+        # output names without extensions!
+        name_haps_afr <- tempfile('delete-me-random-test_afr')
+        name_haps_eur <- tempfile('delete-me-random-test_eur')
+        write_plink( name_haps_afr, anc_haps_ones$AFR, verbose = FALSE )
+        write_plink( name_haps_eur, anc_haps_ones$EUR, verbose = FALSE )
+        # reload as BEDMatrix
+        anc_haps_ones_BM <- list(
+            AFR = suppressMessages( suppressWarnings( BEDMatrix( name_haps_afr ) ) ),
+            EUR = suppressMessages( suppressWarnings( BEDMatrix( name_haps_eur ) ) )
+        )
+        
+        # now repeat test!
+        expect_silent( 
+            data_ones_BM <- geno_last_gen_admix_recomb( anc_haps_ones_BM, bim, map, G, fam, ids, founders_anc )
+        )
+        # haplos isn't as before, but the other two objects match!
+        expect_equal( data_ones_BM$X, data_ones$X )
+        expect_equal( data_ones_BM$Ls, data_ones$Ls )
+        
+        # delete all three outputs (bed/bim/fam) when done
+        delete_files_plink( name_haps_afr )
+        delete_files_plink( name_haps_eur )
+    }
+    
 })
 

@@ -162,3 +162,10 @@ First set of updates for simulating with recombination!
 - Function `pop_recomb` added option `indexes_loci` to simulate only a portion of the genome available.
 - Added functions `tidy_recomb_map_inds` and `recomb_founder_blocks_inherited` to create and manipulate tidy versions of our recombination data structure, which are more useful in some cases, currently focused on identifying founder blocks that are inherited by focal individuals.
   - Added `dplyr` and `tidyselect` as new package dependencies, which is used for both of these new functions that manipulate tidy tables.
+
+# simfam 1.1.11.9000 (2024-10-29)
+
+- Added function `geno_last_gen_admix_recomb` that efficiently simulates admixed families with LD in the ancestors
+  - Added package dependencies `rlang`, `Matrix`, and `methods`, which are used by the new function
+- Function `recomb_haplo_inds` now accepts `Matrix`-package objects (including sparse matrices) as input haplotype matrix
+- Function `recomb_admix_inds` now accepts inputs with a single ancestry (which may happen when used through `geno_last_gen_admix_recomb`).  Before it required at least two ancestries.

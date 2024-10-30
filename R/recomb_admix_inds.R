@@ -90,8 +90,8 @@ recomb_admix_inds <- function( haplos, anc_map, pops = sort( unique( anc_map$pop
         if ( !all( anc_map$pop %in% pops ) )
             stop( 'Populations in `anc_map$pop` are missing in `pops`: ', toString( unique( anc_map$pop[ !(anc_map$pop %in% pops) ] ) ) )
     K <- length( pops )
-    if ( K <= 1L )
-        stop( 'The number of `pops` should be 2 or more!' )
+    if ( K == 0L )
+        stop( 'The number of `pops` should be 1 or more!' )
     
     n_ind <- length( haplos )
     # process each individual

@@ -14,10 +14,8 @@ recomb_haplo_chr <- function( chr, X, pos, ret_anc = FALSE ) {
     if ( !( 'pos' %in% names( chr ) ) )
         stop( '`chr` must have column `pos`!' )
     # X validations in detail
-    if ( !is.matrix( X ) )
+    if ( !is.matrix( X ) && !methods::is( X, 'Matrix' ) )
         stop( '`X` must be a matrix!' )
-    ## if ( !is.numeric( X ) )
-    ##     stop( '`X` must be numeric!' )
     m_loci <- nrow( X )
     # pos validations in detail
     if ( !is.numeric( pos ) )
@@ -36,7 +34,11 @@ recomb_haplo_chr <- function( chr, X, pos, ret_anc = FALSE ) {
     # inputs are haploid so output will be too
     # this is the new individual's haploid variant vector (technically not "genotype", but meh)
     # at this level values don't need to be numeric, they'll just be copied whatever they are, though more specifically if they are integers the output will be too, but will allow numeric in general and also other options
-    xc <- vector( storage.mode( X ), m_loci )
+    x_mode <- storage.mode( X )
+    # class dgCMatrix returns S4 for storage mode, let's get its mode this other way (I'm almost sure these have to be numeric, but I'm less sure that they can't be integer)
+    if ( x_mode == 'S4' )
+        x_mode <- mode( X[ 1, 1 ] )
+    xc <- vector( x_mode, m_loci )
     # can also be useful to return ancestry per position, calculate that now if requested
     if ( ret_anc )
         ancs <- vector( 'character', m_loci )
