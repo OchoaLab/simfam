@@ -169,3 +169,10 @@ First set of updates for simulating with recombination!
   - Added package dependencies `rlang`, `Matrix`, and `methods`, which are used by the new function
 - Function `recomb_haplo_inds` now accepts `Matrix`-package objects (including sparse matrices) as input haplotype matrix
 - Function `recomb_admix_inds` now accepts inputs with a single ancestry (which may happen when used through `geno_last_gen_admix_recomb`).  Before it required at least two ancestries.
+
+# simfam 1.1.12.9000 (2024-11-15)
+
+- Sped up the following functions by restricting locus subsets to be contiguous
+  - Functions `pop_recomb` and `geno_last_gen_admix_recomb` added option `indexes_chr_ends` to provided precalculated chromosome end indexes, which can result in improved runtime when looped.
+  - Added function `indexes_chr` to precalculate chromosome end indexes, to provide to the above functions if desired.
+  - Function `pop_recomb` option `indexes_loci` now must be a range (start and end indexes) rather than take on arbitrary values.

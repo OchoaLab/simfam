@@ -5,7 +5,7 @@
 # @param map Recombination map for given chromosome
 # @param G Number of generations (to multiply standard recombination rate)
 # @param loci_on_cols transpose haps
-# @param indexes_loci subset hap loci, a vector of indexes to keep.  Applied to haps only, `pos` has to be subset already!  (haps can be much bigger and can be read from disk, pos has no such advantage)
+# @param indexes_loci subset hap loci, a range of indexes to keep.  Applied to haps only, `pos` has to be subset already!  (haps can be much bigger and can be read from disk, pos has no such advantage)
 pop_recomb_chr <- function( haps, pos, map, G, loci_on_cols = FALSE, indexes_loci = NULL ) {
     # most of these are redundant with checks outside, but they are all low-computation so meh
     # validations
@@ -38,21 +38,23 @@ pop_recomb_chr <- function( haps, pos, map, G, loci_on_cols = FALSE, indexes_loc
     m_loci_out <- m_loci
     # indexes_loci validations in detail
     if ( !is.null( indexes_loci ) ) {
-        m_loci_out <- length( indexes_loci )
-        if ( m_loci_out > m_loci )
-            stop( '`indexes_loci` must have length equal or smaller than the number of loci in `haps`!' )
+        if ( length( indexes_loci ) != 2L )
+            stop( '`indexes_loci` must have two elements only (it is a range)!' )
         if ( !is.numeric( indexes_loci ) )
             stop( '`indexes_loci` must be numeric!' )
-        if ( min( indexes_loci ) < 0 )
-            stop( '`indexes_loci` must be non-negative!')
-        if ( max( indexes_loci ) > m_loci )
-            stop( '`indexes_loci` max value cannot exceed the number of loci in `haps`!')
+        if ( indexes_loci[ 1L ] > indexes_loci[ 2L ] )
+            stop( '`indexes_loci` must have the first value be equal or smaller than the second one!' )
+        if ( indexes_loci[ 1L ] < 1L )
+            stop( '`indexes_loci` must have first value >= 1!' )
+        if ( indexes_loci[ 2L ] > m_loci )
+            stop( '`indexes_loci` must have second value <= the number of loci in `haps`!' )
+        m_loci_out <- indexes_loci[ 2L ] - indexes_loci[ 1L ] + 1L
     }
     # pos validations in detail
     if ( !is.numeric( pos ) )
         stop( '`pos` must be numeric!' )
     if ( length( pos ) != m_loci_out )
-        stop( 'length of `pos` must equal either the number of rows of `haps` or the length of `indexes_loci` if not NULL!' )
+        stop( 'length of `pos` must equal either the number of rows of `haps` or the length implied by `indexes_loci` if not NULL!' )
     # G validation in detail
     if ( !is.numeric( G ) )
         stop( '`G` must be numeric!' )
@@ -113,7 +115,16 @@ pop_recomb_chr <- function( haps, pos, map, G, loci_on_cols = FALSE, indexes_loc
         # these are destination indexes
         indexes_pos <- i_pos_start : i_pos_end
         # source indexes (in `haps` matrix) are the same unless we're subsetting, in which case map those indexes now too
-        indexes_pos_haps <- if ( is.null( indexes_loci ) ) indexes_pos else indexes_loci[ indexes_pos ]
+        indexes_pos_haps <- indexes_pos
+        if ( !is.null( indexes_loci ) ) {
+            i_pos_haps_start <- indexes_loci[1L] - 1L + i_pos_start
+            i_pos_haps_end <- indexes_loci[1L] - 1L + i_pos_end 
+            indexes_pos_haps <- i_pos_haps_start : i_pos_haps_end
+            # old way of doing this
+            indexes_pos_haps2 <- ( indexes_loci[1L] : indexes_loci[2L] )[ indexes_pos ]
+            # confirm that they match
+            stopifnot( all( indexes_pos_haps == indexes_pos_haps2 ) )
+        }
         # select random haplotype to copy (ok to rarely select same one as before in a row)
         index_hap <- sample.int( n_ind, 1L )
         hap_new[ indexes_pos ] <- if ( loci_on_cols ) {

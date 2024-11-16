@@ -26,7 +26,7 @@ int draw_allele( int x ) {
     return NA_INTEGER;
   } else {
     // anything else must be fatal!
-    stop("A genotype was neither 0, 1, 2, or NA!");
+    stop( "Observed genotype '%i' was neither 0, 1, 2, or NA!", x );
   }
 }
 

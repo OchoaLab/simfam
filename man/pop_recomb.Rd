@@ -12,7 +12,8 @@ pop_recomb(
   n_ind,
   geno = TRUE,
   loci_on_cols = FALSE,
-  indexes_loci = NULL
+  indexes_loci = NULL,
+  indexes_chr_ends = NULL
 )
 }
 \arguments{
@@ -32,8 +33,12 @@ If \code{geno = TRUE} (default), these values should be numeric (recommended are
 \item{loci_on_cols}{If \code{TRUE}, \code{haps} has loci on columns and individuals on rows; if \code{FALSE} (default), loci are on rows and individuals on columns.
 If \code{haps} is a \code{BEDMatrix} object, \code{loci_on_cols} is ignored (set automatically to \code{TRUE} internally).}
 
-\item{indexes_loci}{Vector of indexes of loci to simulate, to request to simulate only a subset of the loci in \code{haps}/\code{bim}.
+\item{indexes_loci}{Vector of index ranges (start, end) of loci to simulate, to request to simulate only a subset of the loci in \code{haps}/\code{bim}.
 Default \code{NULL} simulates all loci in \code{haps}/\code{bim}.}
+
+\item{indexes_chr_ends}{Optional vector mapping each chromosome (index in vector) to the last index in the \code{bim} table; missing chromosomes must be mapped to \code{NA} values.
+If \code{NULL} (default), this vector is calculated from the provided \code{bim} table.
+However, if this function is called repeatedly on the same \code{bim} data, it can improve efficiency to calculate it outside just once (use \code{\link[=indexes_chr]{indexes_chr()}} for this).}
 }
 \value{
 A matrix with the same number of rows as \code{haps} and \code{n_ind} columns, with values copied from \code{haps} in (recombination) blocks if \code{geno = FALSE}, or sums of two such values drawn independently when \code{geno = TRUE}.

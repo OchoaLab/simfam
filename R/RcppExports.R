@@ -9,3 +9,26 @@ geno_fam_cpp <- function(X_in, i_founder_in, i_founder_out, i_child, i_pat, i_ma
     .Call(`_simfam_geno_fam_cpp`, X_in, i_founder_in, i_founder_out, i_child, i_pat, i_mat)
 }
 
+#' Extract last index of every chromosome in a vector of chromosomes
+#'
+#' This function tests that chromosomes appear in their numerical order (dies with an error otherwise), and returns the last index of each chromosome.
+#' 
+#' @param chrs Vector of integer chromosomes as it appears in a `bim` table.
+#' 
+#' @return Vector of end indexes per chromosome.
+#' The numerical value of the chromosome is its index in this vector.
+#' Chromosomes that were not observed have `NA` values as their end indexes.
+#'
+#' @examples
+#' # the end of chr1 is at index 4, for chr2 it's 7, and for chr3 it's 9
+#' indexes_chr( c(1,1,1,1,2,2,2,3,3) )
+#'
+#' @export
+indexes_chr <- function(chrs) {
+    .Call(`_simfam_indexes_chr`, chrs)
+}
+
+indexes_chr_pos <- function(pos, chr_start, chr_end, pos_start, pos_end) {
+    .Call(`_simfam_indexes_chr_pos`, pos, chr_start, chr_end, pos_start, pos_end)
+}
+

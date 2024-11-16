@@ -37,10 +37,38 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// indexes_chr
+IntegerVector indexes_chr(IntegerVector chrs);
+RcppExport SEXP _simfam_indexes_chr(SEXP chrsSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< IntegerVector >::type chrs(chrsSEXP);
+    rcpp_result_gen = Rcpp::wrap(indexes_chr(chrs));
+    return rcpp_result_gen;
+END_RCPP
+}
+// indexes_chr_pos
+IntegerVector indexes_chr_pos(IntegerVector pos, int chr_start, int chr_end, int pos_start, int pos_end);
+RcppExport SEXP _simfam_indexes_chr_pos(SEXP posSEXP, SEXP chr_startSEXP, SEXP chr_endSEXP, SEXP pos_startSEXP, SEXP pos_endSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< IntegerVector >::type pos(posSEXP);
+    Rcpp::traits::input_parameter< int >::type chr_start(chr_startSEXP);
+    Rcpp::traits::input_parameter< int >::type chr_end(chr_endSEXP);
+    Rcpp::traits::input_parameter< int >::type pos_start(pos_startSEXP);
+    Rcpp::traits::input_parameter< int >::type pos_end(pos_endSEXP);
+    rcpp_result_gen = Rcpp::wrap(indexes_chr_pos(pos, chr_start, chr_end, pos_start, pos_end));
+    return rcpp_result_gen;
+END_RCPP
+}
 
 static const R_CallMethodDef CallEntries[] = {
     {"_simfam_draw_allele", (DL_FUNC) &_simfam_draw_allele, 1},
     {"_simfam_geno_fam_cpp", (DL_FUNC) &_simfam_geno_fam_cpp, 6},
+    {"_simfam_indexes_chr", (DL_FUNC) &_simfam_indexes_chr, 1},
+    {"_simfam_indexes_chr_pos", (DL_FUNC) &_simfam_indexes_chr_pos, 5},
     {NULL, NULL, 0}
 };
 

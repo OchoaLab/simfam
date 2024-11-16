@@ -15,8 +15,11 @@
 #' @param geno If `TRUE` (default) returns matrix of genotypes (values in 0,1,2 if `haps` is binary, otherwise double whatever the range of values in `haps` is), otherwise returns matrix of haplotypes (half individuals, same values of input `haps`)
 #' @param loci_on_cols If `TRUE`, `haps` has loci on columns and individuals on rows; if `FALSE` (default), loci are on rows and individuals on columns.
 #' If `haps` is a `BEDMatrix` object, `loci_on_cols` is ignored (set automatically to `TRUE` internally).
-#' @param indexes_loci Vector of indexes of loci to simulate, to request to simulate only a subset of the loci in `haps`/`bim`.
+#' @param indexes_loci Vector of index ranges (start, end) of loci to simulate, to request to simulate only a subset of the loci in `haps`/`bim`.
 #' Default `NULL` simulates all loci in `haps`/`bim`.
+#' @param indexes_chr_ends Optional vector mapping each chromosome (index in vector) to the last index in the `bim` table; missing chromosomes must be mapped to `NA` values.
+#' If `NULL` (default), this vector is calculated from the provided `bim` table.
+#' However, if this function is called repeatedly on the same `bim` data, it can improve efficiency to calculate it outside just once (use [indexes_chr()] for this).
 #'
 #' @return A matrix with the same number of rows as `haps` and `n_ind` columns, with values copied from `haps` in (recombination) blocks if `geno = FALSE`, or sums of two such values drawn independently when `geno = TRUE`.
 #'
@@ -51,7 +54,7 @@
 #' H <- pop_recomb( haps, bim, map, G, n_ind, geno = FALSE )
 #'
 #' @export
-pop_recomb <- function( haps, bim, map, G, n_ind, geno = TRUE, loci_on_cols = FALSE, indexes_loci = NULL ) {
+pop_recomb <- function( haps, bim, map, G, n_ind, geno = TRUE, loci_on_cols = FALSE, indexes_loci = NULL, indexes_chr_ends = NULL ) {
     # validations
     if ( missing( haps ) )
         stop( '`haps` is required!' )
@@ -110,13 +113,21 @@ pop_recomb <- function( haps, bim, map, G, n_ind, geno = TRUE, loci_on_cols = FA
         stop( '`n_ind` must be scalar!' )
     # indexes_loci validation
     if ( !is.null( indexes_loci ) ) {
+        if ( length( indexes_loci ) != 2L )
+            stop( '`indexes_loci` must have two elements only (it is a range)!' )
         if ( !is.numeric( indexes_loci ) )
             stop( '`indexes_loci` must be numeric!' )
-        if ( min( indexes_loci ) < 1 )
-            stop( 'Minimum `indexes_loci` must be equal or greater than 1!' )
-        if ( max ( indexes_loci ) > m_loci )
-            stop( 'Maximum `indexes_loci` must be equal or less than the number of loci!' )
+        if ( indexes_loci[ 1L ] > indexes_loci[ 2L ] )
+            stop( '`indexes_loci` must have the first value be equal or smaller than the second one!' )
+        if ( indexes_loci[ 1L ] < 1L )
+            stop( '`indexes_loci` must have first value >= 1!' )
+        if ( indexes_loci[ 2L ] > m_loci )
+            stop( '`indexes_loci` must have second value <= the number of loci in `haps`!' )
     }
+
+    # calculate this if it wasn't provided, but providing it can be more efficient!
+    if ( is.null( indexes_chr_ends ) )
+        indexes_chr_ends <- indexes_chr( bim$chr )
     
     # final output to concatenate to
     X <- NULL
@@ -124,16 +135,21 @@ pop_recomb <- function( haps, bim, map, G, n_ind, geno = TRUE, loci_on_cols = FA
     # simulate each chromosome in turn
     for ( chr_i in chrs ) {
         # subset haplotype data
-        # NOTE: these have to be real indexes, not boolean vectors (i.e., without the "which", which won't work with internal `pop_recomb_chr`, though otherwise both versions work to subset stuff)
-        indexes <- which( bim$chr == chr_i )
-        # subset further if requested
+        # first retrieve range of chromosome
+        index_range <- indexes_chr_range( indexes_chr_ends, chr_i )
+        
+        # subset ranges further if requested
         if ( !is.null( indexes_loci ) ) {
-            indexes <- intersect( indexes, indexes_loci )
-            # in this case the intersection could be empty, skip chr quietly if so
-            if ( length( indexes ) == 0 )
+            # first check is that end of one is lower than start of the other, in these cases there's no overlap and we skip quietly
+            if ( index_range[2] < indexes_loci[1] || indexes_loci[2] < index_range[1] )
                 next
+            # there is an overlap!  Reduce range if needed
+            if ( index_range[1] < indexes_loci[1] )
+                index_range[1] <- indexes_loci[1]
+            if ( index_range[2] > indexes_loci[2] )
+                index_range[2] <- indexes_loci[2]
         }
-        pos_i <- bim$pos[ indexes ]
+        pos_i <- bim$pos[ index_range[1] : index_range[2] ]
         map_i <- map[[ chr_i ]]
         m_loci_i <- length( pos_i )
         # NOTE: never subset `haps`, which is in general inefficient but extremely so when it is a BEDMatrix object.  It gets subset by internal `pop_recomb_chr` efficiently via `indexes_loci = indexes` option below
@@ -152,11 +168,11 @@ pop_recomb <- function( haps, bim, map, G, n_ind, geno = TRUE, loci_on_cols = FA
         # create data for every individual, which are IID from this distribution
         for ( j in 1L : n_ind ) {
             # draw one haplotype
-            hap_new <- pop_recomb_chr( haps, pos_i, map_i, G, indexes_loci = indexes )
+            hap_new <- pop_recomb_chr( haps, pos_i, map_i, G, indexes_loci = index_range )
 
             if ( geno ) {
                 # draw again and add to create genotypes
-                hap_new <- hap_new + pop_recomb_chr( haps, pos_i, map_i, G, indexes_loci = indexes )
+                hap_new <- hap_new + pop_recomb_chr( haps, pos_i, map_i, G, indexes_loci = index_range )
             }
 
             # store in matrix as desired

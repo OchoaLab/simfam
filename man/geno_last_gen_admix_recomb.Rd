@@ -12,6 +12,7 @@ geno_last_gen_admix_recomb(
   fam,
   ids,
   founders_anc,
+  indexes_chr_ends = NULL,
   loci_on_cols = FALSE,
   missing_vals = c("", 0)
 )
@@ -41,6 +42,10 @@ If IDs in \code{fam} and \code{ids} do not fully agree, the code processes the I
 \item{founders_anc}{a named vector that maps every founder haplotype (the names of this vector) to its ancestry code.
 Ancestry codes must match the codes used in \code{anc_haps} above.
 Founder haplotypes are the founder individual IDs from the pedigree (values in \code{ids[[1]]}) appearing twice, suffixed with "_pat" and "_mat", respectively (so the parents of the founders are unadmixed, though founders be first generation admixed this way).}
+
+\item{indexes_chr_ends}{Optional vector mapping each chromosome (index in vector) to the last index in the \code{bim} table; missing chromosomes must be mapped to \code{NA} values.
+If \code{NULL} (default), this vector is calculated from the provided \code{bim} table.
+However, if this function is called repeatedly on the same \code{bim} data, it can improve efficiency to calculate it outside just once (use \code{\link[=indexes_chr]{indexes_chr()}} for this).}
 
 \item{loci_on_cols}{If \code{TRUE}, \code{haps} has loci on columns and individuals on rows; if \code{FALSE} (default), loci are on rows and individuals on columns.
 If \code{haps} is a \code{BEDMatrix} object, \code{loci_on_cols} is ignored (set automatically to \code{TRUE} internally).}

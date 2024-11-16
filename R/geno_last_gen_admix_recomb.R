@@ -70,9 +70,9 @@
 #'
 #' @export
 #' @importFrom rlang .data
-geno_last_gen_admix_recomb <- function( anc_haps, bim, map, G, fam, ids, founders_anc, loci_on_cols = FALSE, missing_vals = c('', 0) ) {
+geno_last_gen_admix_recomb <- function( anc_haps, bim, map, G, fam, ids, founders_anc, indexes_chr_ends = NULL, loci_on_cols = FALSE, missing_vals = c('', 0) ) {
     # other pop_recomb options left as defaults: indexes_loci = NULL
-
+    
     # require everything that isn't default
     if ( missing( anc_haps ) )
         stop( '`anc_haps` is required!' )
@@ -119,6 +119,11 @@ geno_last_gen_admix_recomb <- function( anc_haps, bim, map, G, fam, ids, founder
     # sinced it's simulated by chromosome, sort by chr:start now
     founder_blocks <- dplyr::arrange( founder_blocks, .data$chr, .data$start )
 
+    # precalculate this so these things aren't recalculated in every call to `pop_recomb` inside the loop
+    # calculate this if it wasn't provided, but providing it can be more efficient!
+    if ( is.null( indexes_chr_ends ) )
+        indexes_chr_ends <- indexes_chr( bim$chr )
+
     # this awkward loop simulates exactly the ancestral haplotypes needed for last generation, and no more
     # a value we access repeatedly
     n_founders <- length( founders_anc )
@@ -128,35 +133,30 @@ geno_last_gen_admix_recomb <- function( anc_haps, bim, map, G, fam, ids, founder
         # extract ranges for this chromosome
         founder_block_chr_i <- dplyr::filter( founder_blocks, .data$chr == chr_i )
         # map between indexes in this chromosome and indexes in global matrix
-        indexes_chr_i <- which( bim$chr == chr_i )
-        m_loci_chr_i <- length( indexes_chr_i )
+        index_range <- indexes_chr_range( indexes_chr_ends, chr_i )
         # skip if we don't have data for this chromosome (test data is like this)
-        if ( m_loci_chr_i == 0 ) next
+        if ( all( is.na( index_range ) ) ) next
         # initialize sparse matrix of founder haplotypes
-        X_chr <- Matrix::Matrix( nrow = m_loci_chr_i, ncol = n_founders, data = 0, sparse = TRUE )
+        X_chr <- Matrix::Matrix( nrow = index_range[2] - index_range[1] + 1L, ncol = n_founders, data = 0, sparse = TRUE )
         # copy names of founder haplotypes here, required!
         colnames( X_chr ) <- names( founders_anc )
         # navigate each of these rows
         for ( i in 1L : nrow( founder_block_chr_i ) ) {
             # find rows from original bim table to simulate
-            indexes_sim <- which(
-                bim$chr == chr_i &
-                bim$pos >= founder_block_chr_i$start[ i ] &
-                bim$pos <= founder_block_chr_i$end[ i ]
-            )
-            # in very sparse or toy examples, there are no loci to simulate, skip and keep going
-            if ( length( indexes_sim ) == 0 ) next
+            indexes_sim_range <- indexes_chr_pos( bim$pos, index_range[1], index_range[2], founder_block_chr_i$start[ i ], founder_block_chr_i$end[ i ] )
+            # skip if nothing was found
+            if ( all( is.na( indexes_sim_range ) ) ) next
             # destination in chr-specific matrix is shifted down this way
-            indexes_in_chr <- indexes_sim - min( indexes_chr_i ) + 1L
+            indexes_in_chr_range <- indexes_sim_range - index_range[1] + 1L
             # now get founder
             founder_i <- founder_block_chr_i$anc[ i ]
             # use appropriate haplotype matrix depending on ancestry of this founder
             X_in <- anc_haps[[ founders_anc[ founder_i ] ]]
             # simulate this segment only, store where we desire it
-            X_chr[ indexes_in_chr, founder_i ] <- pop_recomb( X_in, bim, map, G, 1, geno = FALSE, indexes_loci = indexes_sim, loci_on_cols = loci_on_cols )
+            X_chr[ indexes_in_chr_range[1] : indexes_in_chr_range[2], founder_i ] <- pop_recomb( X_in, bim, map, G, 1, geno = FALSE, indexes_loci = indexes_sim_range, loci_on_cols = loci_on_cols )
         }
         # add to structure, in a list
-        haplos_anc[[ chr_i ]] <- list( X = X_chr, pos = bim$pos[ indexes_chr_i ] )
+        haplos_anc[[ chr_i ]] <- list( X = X_chr, pos = bim$pos[ index_range[1] : index_range[2] ] )
     }
     
     # determine haplotypes of descendants given ancestral haplotypes

@@ -107,6 +107,151 @@ validate_geno <- function( X, m_loci, n_ind, int = TRUE, vals = 0L : 2L ) {
         expect_true( is.integer( X ) )
 }
 
+test_that( 'indexes_chr, indexes_chr_range work', {
+    expect_silent(
+        indexes <- indexes_chr( 1:10 )
+    )
+    # outputs are 1-based
+    expect_equal( indexes, 1:10 )
+    # retrieve coordinates of one chromosome
+    expect_silent( 
+        r <- indexes_chr_range( indexes, 9 )
+    )
+    # in this case start and end are the same (just one index)
+    expect_equal( r, c(9, 9) )
+
+    # a more complicated case with a known answer
+    indexes_in <- c( 1, 1, 1, 2, 2, 2, 2, 3, 4, 4, 4, 5, 6 )
+    indexes_out <- c( 3, 7, 8, 11, 12, 13 )
+    expect_silent(
+        indexes_obs <- indexes_chr( indexes_in )
+    )
+    expect_equal( indexes_obs, indexes_out )
+    # test retrieval too
+    expect_silent( 
+        r <- indexes_chr_range( indexes_obs, 4 )
+    )
+    expect_equal( r, c(9, 11) )
+    
+    # skipped chromosomes have their ends set to zero
+    indexes_in <- c( 1, 2, 4 )
+    indexes_out <- c( 1, 2, NA, 3 )
+    expect_silent(
+        indexes_obs <- indexes_chr( indexes_in )
+    )
+    expect_equal( indexes_obs, indexes_out )
+    # test retrieval too, this is actually the trickest case too
+    expect_silent( 
+        r <- indexes_chr_range( indexes_obs, 4 )
+    )
+    expect_equal( r, c(3, 3) )
+    # and confirm that retrieval returns NA for missing chromosomes
+    expect_silent( 
+        r <- indexes_chr_range( indexes_obs, 3 )
+    )
+    expect_true( all( is.na( r ) ) )
+
+    # harder case where first chr is missing
+    indexes_in <- 2
+    indexes_out <- c( NA, 1 )
+    expect_silent(
+        indexes_obs <- indexes_chr( indexes_in )
+    )
+    expect_equal( indexes_obs, indexes_out )
+    # test retrieval too
+    expect_silent( 
+        r <- indexes_chr_range( indexes_obs, 2 )
+    )
+    expect_equal( r, c(1, 1) )
+    
+    # cause errors now
+    # inputs have to be sorted!
+    expect_error( indexes_chr( 2:1 ) )
+    # and contiguous
+    expect_error( indexes_chr( c( 1, 1, 1, 2, 2, 2, 1 ) ) )
+})
+
+test_that( 'indexes_chr_pos works', {
+    # come up with a big enough example where we know if we're looking beyond where we should
+    pos <- rep.int( NA, 20 )
+    # only these have positions, we will only look at those
+    chr_start <- 5L
+    chr_end <- 10L
+    pos[ chr_start : chr_end ] <- ( chr_start : chr_end ) * 100L
+    
+    expect_silent(
+        r <- indexes_chr_pos( pos, chr_start, chr_end, 630L, 880L )
+    )
+    # here we want to see these indexes
+    expect_equal( r, c(7, 8) )
+
+    # an example with ties
+    expect_silent(
+        r <- indexes_chr_pos( pos, chr_start, chr_end, 600L, 800L )
+    )
+    expect_equal( r, c(6, 8) )
+    # and related edge cases
+    expect_silent(
+        r <- indexes_chr_pos( pos, chr_start, chr_end, 599L, 800L )
+    )
+    expect_equal( r, c(6, 8) )
+    expect_silent(
+        r <- indexes_chr_pos( pos, chr_start, chr_end, 601L, 800L )
+    )
+    expect_equal( r, c(7, 8) )
+    expect_silent(
+        r <- indexes_chr_pos( pos, chr_start, chr_end, 600L, 801L )
+    )
+    expect_equal( r, c(6, 8) )
+    expect_silent(
+        r <- indexes_chr_pos( pos, chr_start, chr_end, 600L, 799L )
+    )
+    expect_equal( r, c(6, 7) )
+
+    # an example that doesn't find anything
+    expect_silent(
+        r <- indexes_chr_pos( pos, chr_start, chr_end, 601L, 699L )
+    )
+    expect_equal( r, as.integer( c(NA, NA) ) )
+
+    # example that should fail because query ends before data does
+    expect_silent(
+        r <- indexes_chr_pos( pos, chr_start, chr_end, 1L, 10L )
+    )
+    expect_equal( r, as.integer( c(NA, NA) ) )
+
+    # example that should fail because query starts after data does
+    expect_silent(
+        r <- indexes_chr_pos( pos, chr_start, chr_end, 2000L, 3000L )
+    )
+    expect_equal( r, as.integer( c(NA, NA) ) )
+
+    # some examples with random data
+    pos <- sort( sample.int( 100, 10 ) )
+    pos_range <- sort( sample.int( 100, 2 ) )
+    chr_start <- 1L
+    chr_end <- 10L
+    expect_silent(
+        r <- indexes_chr_pos( pos, chr_start, chr_end, pos_range[1], pos_range[2] )
+    )
+    # test all cases explicitly
+    indexes <- pos_range[1] <= pos & pos <= pos_range[2]
+    if ( all( is.na( r ) ) ) {
+        # in this case there should have been no positions in between the two desired ones, let's see if that's true
+        expect_true( !any( indexes ) )
+    } else {
+        expect_true( any( indexes ) )
+        # confirm ranges otherwise
+        indexes <- which( indexes )
+        expect_equal( r[1], min( indexes ) )
+        expect_equal( r[2], max( indexes ) )
+    }
+
+    # make sure errors are caught when inputs are out of order
+    expect_error( indexes_chr_pos( pos, chr_end, chr_start, pos_range[1], pos_range[2] ) )
+    expect_error( indexes_chr_pos( pos, chr_start, chr_end, pos_range[2], pos_range[1] ) )
+})
+
 test_that( "recomb_breaks works", {
     # try invalid inputs, expect errors
     expect_error( recomb_breaks() )
@@ -858,8 +1003,9 @@ test_that( "pop_recomb_chr works", {
     n_ind <- 9
     haps <- matrix( rbinom( m_loci * n_ind, 1, 0.5 ), nrow = m_loci, ncol = n_ind )
     # for subsetting tests
-    indexes_loci <- c(2, 3, 7)
-    m_loci_subset <- length( indexes_loci )
+    indexes_loci <- c(2, 4)
+    m_loci_subset <- indexes_loci[2] - indexes_loci[1] + 1L
+    pos_subset <- pos[ indexes_loci[1] : indexes_loci[2] ]
 
     # test a trivial single haplotype as input, so answer is deterministic
     # (but must pass as matrix, hence `drop = FALSE`)
@@ -871,9 +1017,9 @@ test_that( "pop_recomb_chr works", {
 
     # test subsetting with indexes
     expect_silent( 
-        hap_new <- pop_recomb_chr( haps[, 1, drop = FALSE ], pos[ indexes_loci ], map, G, indexes_loci = indexes_loci )
+        hap_new <- pop_recomb_chr( haps[, 1, drop = FALSE ], pos_subset, map, G, indexes_loci = indexes_loci )
     )
-    expect_equal( hap_new, haps[ indexes_loci, 1 ] )
+    expect_equal( hap_new, haps[ indexes_loci[1] : indexes_loci[2], 1 ] )
 
     # now proper full dataset, intended binary case
     expect_silent( 
@@ -884,7 +1030,7 @@ test_that( "pop_recomb_chr works", {
     
     # repeat with subset
     expect_silent( 
-        hap_new <- pop_recomb_chr( haps, pos[ indexes_loci ], map, G, indexes_loci = indexes_loci )
+        hap_new <- pop_recomb_chr( haps, pos_subset, map, G, indexes_loci = indexes_loci )
     )
     expect_equal( length( hap_new ), m_loci_subset )
     expect_true( all( hap_new %in% c(0L, 1L) ) )
@@ -909,7 +1055,7 @@ test_that( "pop_recomb_chr works", {
 
         # and subset version
         expect_silent( 
-            hap_new <- pop_recomb_chr( haps_BM, pos[ indexes_loci ], map, G, indexes_loci = indexes_loci )
+            hap_new <- pop_recomb_chr( haps_BM, pos_subset, map, G, indexes_loci = indexes_loci )
         )
         expect_equal( length( hap_new ), m_loci_subset )
         expect_true( all( hap_new %in% c(0L, 1L) ) )
@@ -967,8 +1113,8 @@ test_that( "pop_recomb works", {
     validate_geno( X, m_loci, n_ind )
 
     # version that simulates only a subset of genome available
-    m_loci_subset <- 7
-    indexes_loci <- sample.int( m_loci, m_loci_subset )
+    indexes_loci <- sort( sample.int( m_loci, 2 ) )
+    m_loci_subset <- indexes_loci[2] - indexes_loci[1] + 1L
     # repeat earlier test otherwise
     expect_silent( 
         X <- pop_recomb( haps, bim, map, G, n_ind, geno = TRUE, indexes_loci = indexes_loci )
