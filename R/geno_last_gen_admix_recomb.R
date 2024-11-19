@@ -136,27 +136,34 @@ geno_last_gen_admix_recomb <- function( anc_haps, bim, map, G, fam, ids, founder
         index_range <- indexes_chr_range( indexes_chr_ends, chr_i )
         # skip if we don't have data for this chromosome (test data is like this)
         if ( all( is.na( index_range ) ) ) next
+        # copy down values for convenience and legibility
+        chr_start <- index_range[1]
+        chr_end <- index_range[2]
         # initialize sparse matrix of founder haplotypes
-        X_chr <- Matrix::Matrix( nrow = index_range[2] - index_range[1] + 1L, ncol = n_founders, data = 0, sparse = TRUE )
+        X_chr <- Matrix::Matrix( nrow = chr_end - chr_start + 1L, ncol = n_founders, data = 0, sparse = TRUE )
         # copy names of founder haplotypes here, required!
         colnames( X_chr ) <- names( founders_anc )
+        # for increased efficiency, remember where was the last start (since blocks are sorted by start, they are ever increasing within the chromosome).  This one gets updated, while `chr_start` will stay the same because it's needed unchanged
+        chr_start_search <- chr_start
         # navigate each of these rows
         for ( i in 1L : nrow( founder_block_chr_i ) ) {
             # find rows from original bim table to simulate
-            indexes_sim_range <- indexes_chr_pos( bim$pos, index_range[1], index_range[2], founder_block_chr_i$start[ i ], founder_block_chr_i$end[ i ] )
+            indexes_sim_range <- indexes_chr_pos( bim$pos, chr_start_search, chr_end, founder_block_chr_i$start[ i ], founder_block_chr_i$end[ i ] )
             # skip if nothing was found
             if ( all( is.na( indexes_sim_range ) ) ) next
             # destination in chr-specific matrix is shifted down this way
-            indexes_in_chr_range <- indexes_sim_range - index_range[1] + 1L
+            indexes_in_chr_range <- indexes_sim_range - chr_start + 1L
             # now get founder
             founder_i <- founder_block_chr_i$anc[ i ]
             # use appropriate haplotype matrix depending on ancestry of this founder
             X_in <- anc_haps[[ founders_anc[ founder_i ] ]]
             # simulate this segment only, store where we desire it
             X_chr[ indexes_in_chr_range[1] : indexes_in_chr_range[2], founder_i ] <- pop_recomb( X_in, bim, map, G, 1, geno = FALSE, indexes_loci = indexes_sim_range, loci_on_cols = loci_on_cols )
+            # for next round's search, narrow range
+            chr_start_search <- indexes_sim_range[1]
         }
         # add to structure, in a list
-        haplos_anc[[ chr_i ]] <- list( X = X_chr, pos = bim$pos[ index_range[1] : index_range[2] ] )
+        haplos_anc[[ chr_i ]] <- list( X = X_chr, pos = bim$pos[ chr_start : chr_end ] )
     }
     
     # determine haplotypes of descendants given ancestral haplotypes

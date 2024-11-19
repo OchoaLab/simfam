@@ -94,7 +94,11 @@ pop_recomb <- function( haps, bim, map, G, n_ind, geno = TRUE, loci_on_cols = FA
     # (in some parts chr could be non-numeric, but the genetic map does require them as indexes)
     if ( !is.numeric( bim$chr ) )
         stop( '`bim$chr` must be numeric!' )
-    chrs <- unique( bim$chr )
+    # calculate this if it wasn't provided, but providing it can be more efficient!
+    if ( is.null( indexes_chr_ends ) )
+        indexes_chr_ends <- indexes_chr( bim$chr )
+    # fastest way to retrieve observed chromosomes
+    chrs <- which( !is.na( indexes_chr_ends ) )
     if ( !is.numeric( bim$pos ) )
         stop( '`bim$pos` must be numeric!' )
     # map validation in detail
@@ -125,10 +129,6 @@ pop_recomb <- function( haps, bim, map, G, n_ind, geno = TRUE, loci_on_cols = FA
             stop( '`indexes_loci` must have second value <= the number of loci in `haps`!' )
     }
 
-    # calculate this if it wasn't provided, but providing it can be more efficient!
-    if ( is.null( indexes_chr_ends ) )
-        indexes_chr_ends <- indexes_chr( bim$chr )
-    
     # final output to concatenate to
     X <- NULL
 

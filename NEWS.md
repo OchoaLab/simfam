@@ -176,3 +176,7 @@ First set of updates for simulating with recombination!
   - Functions `pop_recomb` and `geno_last_gen_admix_recomb` added option `indexes_chr_ends` to provided precalculated chromosome end indexes, which can result in improved runtime when looped.
   - Added function `indexes_chr` to precalculate chromosome end indexes, to provide to the above functions if desired.
   - Function `pop_recomb` option `indexes_loci` now must be a range (start and end indexes) rather than take on arbitrary values.
+
+# simfa 1.1.13.9000 (2024-11-19)
+
+- Functions `pop_recomb` and `geno_last_gen_admix_recomb` further optimized based on code profiling, and smarter coding

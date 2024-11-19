@@ -94,22 +94,15 @@ pop_recomb_chr <- function( haps, pos, map, G, loci_on_cols = FALSE, indexes_loc
     i_pos_start <- 1L
     # navigate chr rows
     for ( i_breaks in 1L : length( breaks_pos ) ) {
-        # find greatest `pos <= breaks_pos[ i_breaks ]`
-        # NOTE: this is end-inclusive!
-        i_pos_end <- pos <= breaks_pos[ i_breaks ]
-        # check for cases where there are no such cases
-        # note i_pos_start is unchanged in those cases
-        if ( !any( i_pos_end ) )
+        # try with new code...
+        # I'm confused why `i_pos_start-1L` works but `i_pos_start` doesn't, but meh...
+        dummy <- indexes_chr_pos( pos, i_pos_start-1L, length( pos ), 1L, breaks_pos[ i_breaks ] )
+        i_pos_end <- dummy[2]
+        # since we didn't check start, let's check now
+        if ( is.na( i_pos_end ) )
             next
-        # turn logicals to indexes
-        i_pos_end <- which( i_pos_end )
-        # and because which returns them in order, we want the last one if there was more than one
-        if ( length( i_pos_end ) > 1L )
-            i_pos_end <- i_pos_end[ length( i_pos_end ) ]
-        # another required condition is that end is later or equal than start
-        if ( i_pos_start > i_pos_end )
+        if ( i_pos_end < i_pos_start )
             next
-        # if all of these passed, we've found a segment (of length 1 or more) to copy from ancestor to descendant!
         
         # now copy data
         # these are destination indexes
@@ -120,10 +113,6 @@ pop_recomb_chr <- function( haps, pos, map, G, loci_on_cols = FALSE, indexes_loc
             i_pos_haps_start <- indexes_loci[1L] - 1L + i_pos_start
             i_pos_haps_end <- indexes_loci[1L] - 1L + i_pos_end 
             indexes_pos_haps <- i_pos_haps_start : i_pos_haps_end
-            # old way of doing this
-            indexes_pos_haps2 <- ( indexes_loci[1L] : indexes_loci[2L] )[ indexes_pos ]
-            # confirm that they match
-            stopifnot( all( indexes_pos_haps == indexes_pos_haps2 ) )
         }
         # select random haplotype to copy (ok to rarely select same one as before in a row)
         index_hap <- sample.int( n_ind, 1L )
