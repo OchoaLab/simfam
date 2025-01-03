@@ -63,12 +63,27 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// kinship_fam_sparse_cpp
+S4 kinship_fam_sparse_cpp(S4 kinship, IntegerVector pars1_R, IntegerVector pars2_R, CharacterVector ids_new_R);
+RcppExport SEXP _simfam_kinship_fam_sparse_cpp(SEXP kinshipSEXP, SEXP pars1_RSEXP, SEXP pars2_RSEXP, SEXP ids_new_RSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< S4 >::type kinship(kinshipSEXP);
+    Rcpp::traits::input_parameter< IntegerVector >::type pars1_R(pars1_RSEXP);
+    Rcpp::traits::input_parameter< IntegerVector >::type pars2_R(pars2_RSEXP);
+    Rcpp::traits::input_parameter< CharacterVector >::type ids_new_R(ids_new_RSEXP);
+    rcpp_result_gen = Rcpp::wrap(kinship_fam_sparse_cpp(kinship, pars1_R, pars2_R, ids_new_R));
+    return rcpp_result_gen;
+END_RCPP
+}
 
 static const R_CallMethodDef CallEntries[] = {
     {"_simfam_draw_allele", (DL_FUNC) &_simfam_draw_allele, 1},
     {"_simfam_geno_fam_cpp", (DL_FUNC) &_simfam_geno_fam_cpp, 6},
     {"_simfam_indexes_chr", (DL_FUNC) &_simfam_indexes_chr, 1},
     {"_simfam_indexes_chr_pos", (DL_FUNC) &_simfam_indexes_chr_pos, 5},
+    {"_simfam_kinship_fam_sparse_cpp", (DL_FUNC) &_simfam_kinship_fam_sparse_cpp, 4},
     {NULL, NULL, 0}
 };
 

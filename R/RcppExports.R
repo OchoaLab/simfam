@@ -32,3 +32,7 @@ indexes_chr_pos <- function(pos, chr_start, chr_end, pos_start, pos_end) {
     .Call(`_simfam_indexes_chr_pos`, pos, chr_start, chr_end, pos_start, pos_end)
 }
 
+kinship_fam_sparse_cpp <- function(kinship, pars1_R, pars2_R, ids_new_R) {
+    .Call(`_simfam_kinship_fam_sparse_cpp`, kinship, pars1_R, pars2_R, ids_new_R)
+}
+

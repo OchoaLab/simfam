@@ -1,6 +1,6 @@
 Package: simfam
 Title: Simulate and Model Family Pedigrees with Structured Founders
-Version: 1.1.13.9000
+Version: 1.1.14.9000
 Authors@R: 
     person(given = "Alejandro",
 	   family = "Ochoa",

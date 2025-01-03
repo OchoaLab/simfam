@@ -8,7 +8,7 @@ draw_couples_nearest <- function(
     # validate kinship_local
     if ( missing( kinship_local ) )
         stop( '`kinship_local` is required!' )
-    if ( !is.matrix( kinship_local ) )
+    if ( !is.matrix( kinship_local ) && !methods::is( kinship_local, 'Matrix' ) )
         stop( '`kinship_local` must be a matrix!' )
     n <- nrow( kinship_local )
     if ( ncol( kinship_local ) != n )

@@ -10,6 +10,8 @@
 #' Extra individuals in `kinship` but absent in `fam$id` will be silently ignored.
 #' A traditional pedigree calculation would use `kinship = diag(n)/2` (plus appropriate column/row names), where `n` is the number of founders, to model unrelated and outbred founders.
 #' However, if `kinship` measures the population kinship estimates between founders, the output is also a population kinship matrix (which combines the structural/ancestral and local/pedigree relatedness values into one).
+#' @param sparse If `TRUE` (default `FALSE`), input `kinship` matrix is manipulated as a sparse matrix (using the structure of the `Matrix` package) using specialized C++ code.
+#' For very large sparse matrices there will be considerable memory use reductions this way, but runtime is slower compared to the dense matrix version of the code.
 #'
 #' @return The kinship matrix of the entire `fam` table, taking the relatedness of the founders into account.
 #' The rows and columns of this kinship matrix correspond to `fam$id` in that order.
@@ -48,14 +50,14 @@
 #' <https://www.cog-genomics.org/plink/1.9/formats#fam>
 #'
 #' @export
-kinship_fam <- function( kinship, fam, missing_vals = c('', 0) ) {
+kinship_fam <- function( kinship, fam, missing_vals = c('', 0), sparse = FALSE ) {
     if ( missing( kinship ) )
         stop( '`kinship` is required!' )
     if ( missing( fam ) )
         stop( '`fam` is required!' )
-    if ( !is.matrix( kinship ) )
+    if ( !is.matrix( kinship ) && !methods::is( kinship, 'Matrix' ) )
         stop( '`kinship` must be a matrix!' )
-    if ( !isSymmetric( kinship ) )
+    if ( is.matrix( kinship ) && !isSymmetric( kinship ) )
         stop( '`kinship` must be a symmetric matrix!' )
     
     # ensures that `kinship` and `fam` agree, maps parent indexes
@@ -66,37 +68,46 @@ kinship_fam <- function( kinship, fam, missing_vals = c('', 0) ) {
     
     # dimensions of output data
     n_ind_fam <- nrow( fam )
-    
-    # initialize output matrix
-    kinship_fam <- matrix(
-        NA,
-        nrow = n_ind_fam,
-        ncol = n_ind_fam
-    )
-    # copy names of individuals
-    rownames( kinship_fam ) <- fam$id
-    colnames( kinship_fam ) <- fam$id
-    # copy founders
-    # reorder/subset columns of X if needed!
-    # place them where those founders are in `fam` (`fam$founder` is logical)
-    kinship_fam[ fam$founder, fam$founder ] <- kinship[ indexes, indexes ]
 
-    # navigate individuals
-    for ( i in 1 : n_ind_fam ) {
-        # skip founders
-        if ( fam$founder[i] ) next
-        # get parents, as indexes of the current kinship matrix (precalculated)
-        p1 <- fam$pati[ i ]
-        p2 <- fam$mati[ i ]
-        # estimate kinship between child and everybody else
-        # simple average works for everybody, including parents themselves
-        kinship_i <- ( kinship_fam[ p1, ] + kinship_fam[ p2, ] ) / 2
-        # copy back to big matrix
-        kinship_fam[ i, ] <- kinship_i
-        kinship_fam[ , i ] <- kinship_i
-        # inbreeding is the kinship of the parents
-        # encode as proper self kinship
-        kinship_fam[ i, i ] <- ( 1 + kinship_fam[ p1, p2 ] ) / 2
+    if ( sparse ) {
+        # convert to desired format if needed.  Necessary when input is sparse diagonal, other cases ought to be fine already
+        # Returns class dsCMatrix as desired
+        kinship_fam <- methods::as( kinship, 'symmetricMatrix' )
+
+        # we only need to process these individuals
+        fam_new <- dplyr::filter( fam, !.data$founder )
+
+        # this does all the magic!
+        kinship_fam <- kinship_fam_sparse_cpp( kinship_fam, fam_new$pati - 1, fam_new$mati - 1, fam_new$id )
+    } else {
+        # initialize output matrix
+        kinship_fam <- matrix( NA, nrow = n_ind_fam, ncol = n_ind_fam )
+        # copy names of individuals
+        rownames( kinship_fam ) <- fam$id
+        colnames( kinship_fam ) <- fam$id
+        # copy founders
+        # reorder/subset columns of X if needed!
+        # place them where those founders are in `fam` (`fam$founder` is logical)
+        kinship_fam[ fam$founder, fam$founder ] <- kinship[ indexes, indexes ]
+
+        # navigate individuals
+        for ( i in 1 : n_ind_fam ) {
+            # skip founders
+            if ( fam$founder[i] ) next
+            # get parents, as indexes of the current kinship matrix (precalculated)
+            p1 <- fam$pati[ i ]
+            p2 <- fam$mati[ i ]
+            
+            # estimate kinship between child and everybody else
+            # simple average works for everybody, including parents themselves
+            kinship_i <- ( kinship_fam[ p1, ] + kinship_fam[ p2, ] ) / 2
+            # copy back to big matrix
+            kinship_fam[ i, ] <- kinship_i
+            kinship_fam[ , i ] <- kinship_i
+            # inbreeding is the kinship of the parents
+            # encode as proper self kinship
+            kinship_fam[ i, i ] <- ( 1 + kinship_fam[ p1, p2 ] ) / 2
+        }
     }
     
     # return entire matrix!

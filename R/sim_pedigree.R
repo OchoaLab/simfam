@@ -13,6 +13,8 @@
 #' If both `G` is specified and `length(n) > 1`, both values must agree.
 #' @param sex The numeric sex values for the founders (1L for male, 2L for female).
 #' By default they are drawn randomly using [draw_sex()].
+#' @param sparse If `TRUE` (default `FALSE`), `kinship_local` below is encoded and manipulated as a sparse matrix (using the structure of the `Matrix` package) using specialized C++ code.
+#' For very large `n` and `G` there will be considerable memory use reductions if `sparse = TRUE`, but runtime is slower compared to the dense matrix version of the code.
 #' @param kinship_local The local kinship matrix of the founder population.
 #' The default value is half the identity matrix, which corresponds to locally unrelated and locally outbred founders.
 #' This "local" kinship is the basis for all kinship calculations used to decide on close relative avoidance.
@@ -63,7 +65,8 @@ sim_pedigree <- function(
                          n,
                          G = length( n ),
                          sex = draw_sex( n[1] ),
-                         kinship_local = diag( n[1] ) / 2,
+                         sparse = FALSE,
+                         kinship_local = if ( sparse ) Matrix::Diagonal( n[1], 0.5 ) else diag( n[1] ) / 2,
                          cutoff = 1 / 4^3,
                          children_min = 1L,
                          full = FALSE
@@ -86,11 +89,11 @@ sim_pedigree <- function(
         stop( '`children_min` must be non-negative!' )
     # check other inputs
     # won't repeat things checked in `draw_couples_nearest`, but check against `n` doesn't happen there (and checking that it's a matrix first makes sense)
-    if ( !is.matrix( kinship_local ) )
+    if ( !is.matrix( kinship_local ) && !methods::is( kinship_local, 'Matrix' ) )
         stop( '`kinship_local` must be a matrix!' )
     if ( nrow( kinship_local ) != n[1] )
         stop( 'Number of individuals in `kinship_local` must equal `n[1]`!' )
-
+    
     # initialize `fam` tibble with data for founders
     fam <- tibble::tibble(
         fam = 'fam1', # place in desired order, but there aren't families really
@@ -118,7 +121,7 @@ sim_pedigree <- function(
     
     for (g in 2:G) {
         # let's pick pairs of parents
-        parents <- draw_couples_nearest(kinship_local, sex, cutoff = cutoff)
+        parents <- draw_couples_nearest( kinship_local, sex, cutoff = cutoff )
         n_fam <- ncol( parents )
         # worst-case scenario is everybody is too related so there isn't a single parent and no more generations can be picked
         # just die if it's that bad
@@ -157,7 +160,7 @@ sim_pedigree <- function(
         fam_p <- rbind( fam_p, fam_g )
         
         # calculates kinship for entire `fam_p` provided!
-        kinship_local <- kinship_fam( kinship_local, fam_p )
+        kinship_local <- kinship_fam( kinship_local, fam_p, sparse = sparse )
         # subset to keep children only now
         indexes <- rownames( kinship_local ) %in% fam_g$id
         kinship_local <- kinship_local[ indexes, indexes ]

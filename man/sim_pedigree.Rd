@@ -8,7 +8,8 @@ sim_pedigree(
   n,
   G = length(n),
   sex = draw_sex(n[1]),
-  kinship_local = diag(n[1])/2,
+  sparse = FALSE,
+  kinship_local = if (sparse) Matrix::Diagonal(n[1], 0.5) else diag(n[1])/2,
   cutoff = 1/4^3,
   children_min = 1L,
   full = FALSE
@@ -26,6 +27,9 @@ If both \code{G} is specified and \code{length(n) > 1}, both values must agree.}
 
 \item{sex}{The numeric sex values for the founders (1L for male, 2L for female).
 By default they are drawn randomly using \code{\link[=draw_sex]{draw_sex()}}.}
+
+\item{sparse}{If \code{TRUE} (default \code{FALSE}), \code{kinship_local} below is encoded and manipulated as a sparse matrix (using the structure of the \code{Matrix} package) using specialized C++ code.
+For very large \code{n} and \code{G} there will be considerable memory use reductions if \code{sparse = TRUE}, but runtime is slower compared to the dense matrix version of the code.}
 
 \item{kinship_local}{The local kinship matrix of the founder population.
 The default value is half the identity matrix, which corresponds to locally unrelated and locally outbred founders.

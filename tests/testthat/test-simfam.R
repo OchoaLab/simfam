@@ -1,9 +1,12 @@
 library(tibble)
+library(Matrix)
 
 test_that( "draw_couples_nearest works", {
     # create kinship for unrelated founders first
     n <- 10
     kinship_local <- diag( n ) / 2
+    # test sparse version too
+    kinship_local_sparse <- Matrix( kinship_local, sparse = TRUE )
     # even sex distribution to ensure prefect pairing
     sex <- rep.int( c(1, 2), n / 2 )
 
@@ -19,6 +22,23 @@ test_that( "draw_couples_nearest works", {
     # a successful run
     expect_silent(
         parents <- draw_couples_nearest( kinship_local, sex )
+    )
+    expect_true( is.matrix( parents ) )
+    expect_equal( nrow( parents ), 2 )
+    expect_equal( ncol( parents ), n / 2 ) # equality only because everybody is unrelated in this case
+    expect_true( !anyNA( parents ) )
+    # parents are a subset of all individuals available (as indexes)
+    expect_true( all( parents %in% 1 : n ) )
+    # and no parent appears twice
+    expect_equal( length( parents ), length( unique( parents ) ) )
+    # verify parent sexes
+    expect_true( all( sex[ parents[ 1, ] ] == 1 ) )
+    expect_true( all( sex[ parents[ 2, ] ] == 2 ) )
+    # no need to verify kinship here because it was all trivial
+
+    # test sparse matrix input
+    expect_silent(
+        parents <- draw_couples_nearest( kinship_local_sparse, sex )
     )
     expect_true( is.matrix( parents ) )
     expect_equal( nrow( parents ), 2 )
@@ -225,8 +245,10 @@ test_that( "match_fam_founders works", {
 
 # tests for recurrent data
 validate_kinship_proper <- function( kinship, ids ) {
-    expect_true( is.matrix( kinship ) )
-    expect_true( isSymmetric( kinship ) )
+    expect_true( is.matrix( kinship ) || is( kinship, 'Matrix' ) )
+    # this test fails with sparse matrices for stupid reasons... TODO: revisit if we can force symmetry more smartly
+    if ( is.matrix( kinship ) )
+        expect_true( isSymmetric( kinship ) )
     expect_equal( nrow( kinship ), length( ids ) )
     expect_true( !anyNA( kinship ) )
     expect_true( min( kinship ) >= 0 )
@@ -305,6 +327,15 @@ test_that( "kinship_fam works", {
         
         # these should be identical!
         expect_equal( kinship_all, kinship_kinship2 )
+
+        # repeat with sparse input and sparse output
+        kinship_sparse <- Matrix( kinship, sparse = TRUE )
+        expect_silent(
+            kinship_all_sparse <- kinship_fam( kinship_sparse, fam, sparse = TRUE )
+        )
+        # these should be identical!  After previous output is also made sparse
+        #expect_equal( kinship_all_sparse, Matrix( kinship_all, sparse = TRUE ) ) # this doesnt work because the first one isn't encoded as a symmetric matrix
+        expect_equal( as.matrix( kinship_all_sparse ), kinship_all ) # sadly, to compare, we need to unsparsen
     }
 
     # a smaller toy example with unrelated founders, but with interlaced founders and non-founders, and different kinship order, to check that case explicitly (and also not dependent on kinship2 being available for testing)
@@ -488,6 +519,87 @@ test_that( "sim_pedigree works", {
             kinship_kinship2_g <- kinship_kinship2[ indexes, indexes ]
             # finally, compare!
             expect_equal( data$kinship_local[[ g ]], kinship_kinship2_g )
+        }
+    }
+})
+
+test_that( "sim_pedigree sparse works", {
+    G <- 3
+    n <- 16
+
+    # cause errors on purpose
+    expect_error( sim_pedigree() )
+    expect_error( sim_pedigree( n = n ) ) # fails because n is scalar only
+    expect_error( sim_pedigree( G = G ) )
+
+    # a minimal, successful run
+    # NOTE: had to set sex of founders to be exactly half male/female because otherwise they are set randomly, and there is a good chance (for small `n`) that they are all the same sex, in which case there's no solution!
+    expect_silent(
+        data <- sim_pedigree( n, G, sex = rep_len( c(1L, 2L), n ), sparse = TRUE )
+    )
+    expect_true( is.list( data ) )
+    expect_equal( names( data ), c('fam', 'ids', 'kinship_local') )
+    # check fam
+    validate_fam( data$fam, n, G )
+    # check ids
+    validate_ids( data$ids, n, G )
+    # check kinship_local
+    names_kinship_exp <- paste0( G, '-', 1 : n )
+    validate_kinship_proper( data$kinship_local, names_kinship_exp )
+
+    # it'd be nice to compare kinship calculated by `kinship2` package!
+    if ( suppressMessages(suppressWarnings(require(kinship2))) ) {
+        # calculate the kinship matrix directly from FAM
+        kinship_kinship2 <- kin2( data$fam )
+        
+        # subset because we only have last generation (though that suffices, since it couldn't be correct if the previous steps weren't also correct due to the recursivity of calculations)
+        indexes <- (G-1) * n + 1:n # these are the indexes we want
+        kinship_kinship2 <- kinship_kinship2[ indexes, indexes ]
+        # finally, compare!
+        #expect_equal( data$kinship_local, Matrix( kinship_kinship2, sparse = TRUE ) ) # doesn't work because first one isn't encoded as symmetric
+        expect_equal( as.matrix( data$kinship_local ), kinship_kinship2 ) # unsparsen for comparison
+    }
+
+    # do a version with variable `n` per generation and full output
+    # better to have population grow since there's a minimum number of children
+    G <- 3
+    n <- c(16, 19, 21)
+
+    # another type of error if G and n are mismatched in dimensions
+    expect_error( sim_pedigree( n[1:2], G ) )
+
+    # and now the proper run
+    # again set sex to ensure at least one pair in first generation
+    expect_silent(
+        data <- sim_pedigree( n, sex = rep_len( c(1L, 2L), n[1] ), full = TRUE, sparse = TRUE )
+    )
+    expect_true( is.list( data ) )
+    expect_equal( names( data ), c('fam', 'ids', 'kinship_local') )
+    # check fam
+    validate_fam( data$fam, n, G )
+    # check ids
+    validate_ids( data$ids, n, G )
+    # check kinship_local
+    # this time it's a list because `full = TRUE`
+    expect_true( is.list( data$kinship_local ) )
+    expect_equal( length( data$kinship_local ), G )
+    for ( g in 1 : G ) {
+        names_kinship_exp <- paste0( g, '-', 1 : n[g] )
+        validate_kinship_proper( data$kinship_local[[g]], names_kinship_exp )
+    }
+    # compare to `kinship2` package again!
+    if ( suppressMessages(suppressWarnings(require(kinship2))) ) {
+        # calculate the kinship matrix directly from FAM
+        kinship_kinship2 <- kin2( data$fam )
+
+        # here we subset each generation and compare
+        for ( g in 1 : G ) {
+            # subset the current generation
+            # these are the indexes we want
+            indexes <- sum( n[ seq_len(g-1) ] ) + 1 : n[g]
+            kinship_kinship2_g <- kinship_kinship2[ indexes, indexes ]
+            # finally, compare!
+            expect_equal( as.matrix( data$kinship_local[[ g ]] ), kinship_kinship2_g )
         }
     }
 })

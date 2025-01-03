@@ -4,7 +4,7 @@
 \alias{kinship_fam}
 \title{Calculate kinship matrix of a pedigree with structured founders}
 \usage{
-kinship_fam(kinship, fam, missing_vals = c("", 0))
+kinship_fam(kinship, fam, missing_vals = c("", 0), sparse = FALSE)
 }
 \arguments{
 \item{kinship}{The kinship matrix of the founders.
@@ -24,6 +24,9 @@ Parents must appear earlier than their children in the table.}
 \item{missing_vals}{The list of ID values treated as missing.
 \code{NA} is always treated as missing.
 By default, the empty string ('') and zero (0) are also treated as missing (remove values from here if this is a problem).}
+
+\item{sparse}{If \code{TRUE} (default \code{FALSE}), input \code{kinship} matrix is manipulated as a sparse matrix (using the structure of the \code{Matrix} package) using specialized C++ code.
+For very large sparse matrices there will be considerable memory use reductions this way, but runtime is slower compared to the dense matrix version of the code.}
 }
 \value{
 The kinship matrix of the entire \code{fam} table, taking the relatedness of the founders into account.

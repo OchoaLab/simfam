@@ -177,6 +177,10 @@ First set of updates for simulating with recombination!
   - Added function `indexes_chr` to precalculate chromosome end indexes, to provide to the above functions if desired.
   - Function `pop_recomb` option `indexes_loci` now must be a range (start and end indexes) rather than take on arbitrary values.
 
-# simfa 1.1.13.9000 (2024-11-19)
+# simfam 1.1.13.9000 (2024-11-19)
 
 - Functions `pop_recomb` and `geno_last_gen_admix_recomb` further optimized based on code profiling, and smarter coding
+
+# simfam 1.1.14.9000 (2025-01-03)
+
+- Functions `kinship_fam` and `sim_pedigree` added option `sparse` to handle sparse kinship matrices, which reduce memory usage when applicable but are currently slower algorithms otherwise.
