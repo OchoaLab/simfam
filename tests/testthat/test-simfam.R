@@ -1,12 +1,70 @@
 library(tibble)
 library(Matrix)
 
+test_that( "close_relatives_sparse_cpp works", {
+    # create a matrix with only unrelated people first, most trivial case but one that happens in every first generation of a pedigree
+    # my basic function requires the matrix to already be in the right format
+    n <- 10
+    cutoff <- 1 / 4^3 # match sim_pedigree default
+    kinship <- Diagonal( n, 0.5 )
+    kinship <- as( kinship, 'symmetricMatrix' )
+
+    # successful yet trivial run
+    expect_silent(
+        close_relatives <- close_relatives_sparse_cpp( kinship, cutoff )
+    )
+    expect_true( is.list( close_relatives ) )
+    expect_equal( length( close_relatives ), n )
+    expect_equal( length( unlist( close_relatives ) ), 0 )
+
+    # now a non-empty case, constructed manually
+    # start from previous example
+    kinship[ 1, 2 ] <- 0.25
+    kinship[ 9, 10 ] <- 0.25
+    # previous edits turn class to dgCMatrix (no longer symmetric), but this does exactly what we want:
+    kinship <- forceSymmetric( kinship )
+    expect_silent(
+        close_relatives <- close_relatives_sparse_cpp( kinship, cutoff )
+    )
+    expect_true( is.list( close_relatives ) )
+    expect_equal( length( close_relatives ), n )
+    expect_equal( close_relatives[ c(1:2, 9:10) ], list(2,1,10,9) )
+    expect_equal( length( unlist( close_relatives[ 3:8 ] ) ), 0 )
+
+    # continue to make example more complex
+    kinship[ 1, 3 ] <- 0.25
+    kinship[ 2, 3 ] <- 0.25
+    kinship <- forceSymmetric( kinship )
+    expect_silent(
+        close_relatives <- close_relatives_sparse_cpp( kinship, cutoff )
+    )
+    expect_true( is.list( close_relatives ) )
+    expect_equal( length( close_relatives ), n )
+    expect_equal( close_relatives[ c(1:3, 9:10) ], list( 2:3, c(1,3), 1:2, 10, 9 ) )
+    expect_equal( length( unlist( close_relatives[ 4:8 ] ) ), 0 )
+
+    # and introduce relatives that are too distant and don't change anything, and one that's right at the threshold
+    kinship[ 4, 5 ] <- 1 / 4^3
+    kinship[ 6, 7 ] <- 1 / 4^4
+    kinship[ 6, 8 ] <- 1 / 4^4
+    kinship <- forceSymmetric( kinship )
+    expect_silent(
+        close_relatives <- close_relatives_sparse_cpp( kinship, cutoff )
+    )
+    expect_true( is.list( close_relatives ) )
+    expect_equal( length( close_relatives ), n )
+    expect_equal( close_relatives[ c(1:5, 9:10) ], list( 2:3, c(1,3), 1:2, 5, 4, 10, 9 ) )
+    expect_equal( length( unlist( close_relatives[ 6:8 ] ) ), 0 )
+})
+
+
 test_that( "draw_couples_nearest works", {
     # create kinship for unrelated founders first
     n <- 10
     kinship_local <- diag( n ) / 2
     # test sparse version too
     kinship_local_sparse <- Matrix( kinship_local, sparse = TRUE )
+    kinship_local_sparse <- as( kinship_local_sparse, 'symmetricMatrix' )
     # even sex distribution to ensure prefect pairing
     sex <- rep.int( c(1, 2), n / 2 )
 
@@ -38,7 +96,7 @@ test_that( "draw_couples_nearest works", {
 
     # test sparse matrix input
     expect_silent(
-        parents <- draw_couples_nearest( kinship_local_sparse, sex )
+        parents <- draw_couples_nearest( kinship_local_sparse, sex, sparse = TRUE )
     )
     expect_true( is.matrix( parents ) )
     expect_equal( nrow( parents ), 2 )

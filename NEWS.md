@@ -187,4 +187,8 @@ First set of updates for simulating with recombination!
 
 # simfam 1.1.15.9000 (2025-01-07)
 
-- Function `kinship_fam` runtime optimized: internal C++ code has new structure for extracting rows considerably faster (at the expense of somewhat more memory).
+- Function `kinship_fam` runtime optimized for sparse case: internal C++ code has new structure for extracting rows considerably faster (at the expense of somewhat more memory).
+
+# simfam 1.1.16.9000 (2025-12-08)
+
+- Function `sim_pedigree` optimized for sparse case: internal C++ code now identifies all close relatives in a single scan of the sparse structure, which is much faster than the repeated queries performed before.

@@ -10,6 +10,18 @@ Rcpp::Rostream<true>&  Rcpp::Rcout = Rcpp::Rcpp_cout_get();
 Rcpp::Rostream<false>& Rcpp::Rcerr = Rcpp::Rcpp_cerr_get();
 #endif
 
+// close_relatives_sparse_cpp
+std::vector< std::vector<size_t> > close_relatives_sparse_cpp(S4 kinship, double cutoff);
+RcppExport SEXP _simfam_close_relatives_sparse_cpp(SEXP kinshipSEXP, SEXP cutoffSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< S4 >::type kinship(kinshipSEXP);
+    Rcpp::traits::input_parameter< double >::type cutoff(cutoffSEXP);
+    rcpp_result_gen = Rcpp::wrap(close_relatives_sparse_cpp(kinship, cutoff));
+    return rcpp_result_gen;
+END_RCPP
+}
 // draw_allele
 int draw_allele(int x);
 RcppExport SEXP _simfam_draw_allele(SEXP xSEXP) {
@@ -79,6 +91,7 @@ END_RCPP
 }
 
 static const R_CallMethodDef CallEntries[] = {
+    {"_simfam_close_relatives_sparse_cpp", (DL_FUNC) &_simfam_close_relatives_sparse_cpp, 2},
     {"_simfam_draw_allele", (DL_FUNC) &_simfam_draw_allele, 1},
     {"_simfam_geno_fam_cpp", (DL_FUNC) &_simfam_geno_fam_cpp, 6},
     {"_simfam_indexes_chr", (DL_FUNC) &_simfam_indexes_chr, 1},

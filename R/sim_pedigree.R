@@ -93,6 +93,10 @@ sim_pedigree <- function(
         stop( '`kinship_local` must be a matrix!' )
     if ( nrow( kinship_local ) != n[1] )
         stop( 'Number of individuals in `kinship_local` must equal `n[1]`!' )
+
+    # code assumes this specific encoding, and it's way smoother keeping it this way throughout
+    if ( sparse )
+        kinship_local <- methods::as( kinship_local, 'symmetricMatrix' )
     
     # initialize `fam` tibble with data for founders
     fam <- tibble::tibble(
@@ -121,7 +125,7 @@ sim_pedigree <- function(
     
     for (g in 2:G) {
         # let's pick pairs of parents
-        parents <- draw_couples_nearest( kinship_local, sex, cutoff = cutoff )
+        parents <- draw_couples_nearest( kinship_local, sex, cutoff = cutoff, sparse = sparse )
         n_fam <- ncol( parents )
         # worst-case scenario is everybody is too related so there isn't a single parent and no more generations can be picked
         # just die if it's that bad

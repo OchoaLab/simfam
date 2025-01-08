@@ -3,7 +3,8 @@
 draw_couples_nearest <- function(
                                  kinship_local,
                                  sex,
-                                 cutoff = 1 / 4^3
+                                 cutoff = 1 / 4^3,
+                                 sparse = FALSE
                                  ) {
     # validate kinship_local
     if ( missing( kinship_local ) )
@@ -26,6 +27,10 @@ draw_couples_nearest <- function(
         stop( '`sex` must have length (', length( sex ), ') equal to `kinship_local` rows/columns (', n, ')!' )
     if ( !all( sex %in% c( 1, 2 ) ) )
         stop( '`sex` must take only values in: 1, 2!' )
+
+    # extract all close relatives from sparse structure, if that's what we're using
+    if ( sparse )
+        close_relatives <- close_relatives_sparse_cpp( kinship_local, cutoff )
     
     # the maximum number of parents/pairs
     n2 <- floor( n / 2 )
@@ -50,7 +55,11 @@ draw_couples_nearest <- function(
         # remove from available men
         available_men <- setdiff( available_men, current_man )
         # calculate kinship from current man to all available women, set threshold
-        available_women_unrelated <- available_women[ kinship_local[ available_women, current_man ] < cutoff ]
+        if ( sparse ) {
+            # relatives are already known, just exclude them from list
+            available_women_unrelated <- setdiff( available_women, close_relatives[[ current_man ]] )
+        } else 
+            available_women_unrelated <- available_women[ kinship_local[ available_women, current_man ] < cutoff ]
         # here is a potential failure point, if all other remaining women are too related to current man, will have to skip to next iteration
         # there's no solution involving this man, who has already been removed from `available_men`, which ensures we don't accidentally pick him again, so just move on
         if ( length( available_women_unrelated ) == 0 ) 
