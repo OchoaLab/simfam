@@ -28,14 +28,25 @@ S4 kinship_fam_sparse_cpp(
   std::vector<double> xs = as< std::vector<double> >( xs_R );
   std::vector<size_t> is = as< std::vector<size_t> >( is_R );
   std::vector<size_t> ps = as< std::vector<size_t> >( ps_R );
-  size_t j, p, p2, indiv, ps1_start, ps1_end, ps1_length, ps1_filled, par1, par2;
+  size_t i, j, p, p2, r, indiv, ps2_start, ps2_end, ps2_length, ps2_filled, row_length, par1, par2;
   double f;
+  std::vector<size_t> row;
+  std::vector<size_t>::iterator row_iter;
   
   // for row searches, precalculate the columns at each position `p` of `is`
   std::vector<size_t> js( is_length );
   for ( j = 0; j < ps_length - 1; j++ )
     for ( p = ps[ j ]; p < ps[ j + 1 ]; p++ )
       js[ p ] = j;
+
+  // also store a structure that maps rows directly, excluding the diagonal
+  std::vector< std::vector<size_t> > rows(n, std::vector<size_t>(0));
+  for ( p = 0; p < is_length; p++ ) {
+    i = is[ p ];
+    if ( i == js[ p ] ) continue;
+    // add to this row this p value, which helps us retrieve the value (x) and the column index (j)
+    rows[ i ].push_back( p );
+  }
   
   // process each individual
   size_t n_indiv = pars1_R.length();
@@ -54,36 +65,41 @@ S4 kinship_fam_sparse_cpp(
     }
 
     // search column par1
-    ps1_start = ps[ par1 ];
-    ps1_end = ps[ par1 + 1 ];
-    ps1_length = ps1_end - ps1_start;
-    std::vector<size_t> is2( ps1_length );
-    std::vector<double> xs2( ps1_length );
-    for ( p = ps1_start, p2 = 0; p < ps1_end; p++, p2++ ) {
+    ps2_start = ps[ par1 ];
+    ps2_end = ps[ par1 + 1 ];
+    ps2_length = ps2_end - ps2_start;
+    std::vector<size_t> is2( ps2_length );
+    std::vector<double> xs2( ps2_length );
+    for ( p = ps2_start, p2 = 0; p < ps2_end; p++, p2++ ) {
       // these vectors are new values we'll be adding in the end
       is2[ p2 ] = is[ p ];
       xs2[ p2 ] = xs[ p ];
     }
-    
-    // search rows for par1, starting at current position (ps1_end)
-    for ( p = ps1_end; p < is_length; p++ ) {
-      if ( is[ p ] == par1 ) {
-	is2.push_back( js[ p ] );
-	xs2.push_back( xs[ p ] );
-      }
-    }
 
+    // search row par1
+    row = rows[ par1 ];
+    ps2_filled = ps2_length;
+    row_length = row.size();
+    ps2_length = ps2_filled + row_length;
+    is2.resize( ps2_length );
+    xs2.resize( ps2_length );
+    for ( r = 0, p2 = ps2_filled; r < row_length; r++, p2++ ) {
+      p = row[ r ];
+      is2[ p2 ] = js[ p ];
+      xs2[ p2 ] = xs[ p ];
+    }
+    
     // search column par2
-    ps1_start = ps[ par2 ];
-    ps1_end = ps[ par2 + 1 ];
-    ps1_length = ps1_end - ps1_start;
+    ps2_start = ps[ par2 ];
+    ps2_end = ps[ par2 + 1 ];
+    ps2_length = ps2_end - ps2_start;
     // resize is2/xs2 instead of using push_back, since we know the length of the new data in advance
-    ps1_filled = is2.size();
-    is2.resize( ps1_filled + ps1_length );
-    xs2.resize( ps1_filled + ps1_length );
+    ps2_filled = is2.size();
+    is2.resize( ps2_filled + ps2_length );
+    xs2.resize( ps2_filled + ps2_length );
     // also find and set inbreeding
     f = 0;
-    for ( p = ps1_start, p2 = ps1_filled; p < ps1_end; p++, p2++ ) {
+    for ( p = ps2_start, p2 = ps2_filled; p < ps2_end; p++, p2++ ) {
       // these vectors are new values we'll be adding in the end
       is2[ p2 ] = is[ p ];
       xs2[ p2 ] = xs[ p ];
@@ -93,21 +109,25 @@ S4 kinship_fam_sparse_cpp(
       }
     }
 
-    // search rows for par2, starting at current position (ps1_end)
-    for ( p = ps1_end; p < is_length; p++ ) {
-      if ( is[ p ] == par2 ) {
-	is2.push_back( js[ p ] );
-	xs2.push_back( xs[ p ] );
-      }
+    // search row par2
+    row = rows[ par2 ];
+    ps2_filled = is2.size();
+    row_length = row.size();
+    ps2_length = ps2_filled + row_length;
+    is2.resize( ps2_length );
+    xs2.resize( ps2_length );
+    for ( r = 0, p2 = ps2_filled; r < row_length; r++, p2++ ) {
+      p = row[ r ];
+      is2[ p2 ] = js[ p ];
+      xs2[ p2 ] = xs[ p ];
     }
-    
+
     // almost done, first sort data by `i`
     // because we need parallel sorting, let's do it this way
     // https://stackoverflow.com/questions/17554242/how-to-obtain-the-index-permutation-after-the-sorting
     // first create a simple index vector
-    ps1_length = is2.size();
-    std::vector<size_t> index( ps1_length );
-    for ( p = 0 ; p < ps1_length ; p++ )
+    std::vector<size_t> index( ps2_length );
+    for ( p = 0 ; p < ps2_length ; p++ )
       index[ p ] = p;
     // this sorts index
     sort( index.begin(), index.end(),
@@ -116,9 +136,9 @@ S4 kinship_fam_sparse_cpp(
 	  }
 	  );
     // now apply index to vectors, but need to store them in new objects
-    std::vector<size_t> is2_sorted( ps1_length );
-    std::vector<double> xs2_sorted( ps1_length );
-    for ( p = 0 ; p < ps1_length ; p++ ) {
+    std::vector<size_t> is2_sorted( ps2_length );
+    std::vector<double> xs2_sorted( ps2_length );
+    for ( p = 0 ; p < ps2_length ; p++ ) {
       p2 = index[ p ];
       is2_sorted[ p ] = is2[ p2 ];
       // good time to halve all new x values, as they must be
@@ -131,7 +151,7 @@ S4 kinship_fam_sparse_cpp(
     // now add values where both parents are related to a given person, instead of listing twice
     // NOTE: there's always at least two individuals, since this person is related to both of their parents, so this won't fail
     // NOTE: it's ok to increment p even when there was a deletion, because there are never more than two overlaps (because there are only two parents). Skipping the unnecessary test should be faster!
-    for ( p = 1 ; p < ps1_length ; p++ ) {
+    for ( p = 1 ; p < ps2_length ; p++ ) {
       if ( is2[ p ] == is2[ p - 1 ] ) {
 	// since is2 is now sorted, repeats must be adjacent!
 	// add up value here onto previous one
@@ -141,14 +161,14 @@ S4 kinship_fam_sparse_cpp(
 	is2.erase( is2.begin() + p );
 	xs2.erase( xs2.begin() + p );
 	// decrement this too
-	ps1_length--;
+	ps2_length--;
       }
     }
 
     // the above loops never set self kinship directly in any form, since the new individual isn't even on the matrix, so we have to do it as an extra step.  However, we have already captured the kinship between parents if any.
     // the self kinship is always the last value of the new column, so it can be added after sorting and halving
     n++; // now's the best time to increment size of output matrix
-    ps1_length++;
+    ps2_length++;
     is2.push_back( n - 1 ); // remember it's 0-based!
     xs2.push_back( ( 1 + f ) / 2 );
     
@@ -156,17 +176,24 @@ S4 kinship_fam_sparse_cpp(
     xs.insert( xs.end(), xs2.begin(), xs2.end() );
     is.insert( is.end(), is2.begin(), is2.end() );
     // for the new ps, we just added one more column, and the increment is the number of new values
-    ps.push_back( ps[ ps_length - 1 ] + ps1_length );
+    ps.push_back( ps[ ps_length - 1 ] + ps2_length );
     // though only used internally, update this too so it works in the next round
-    std::vector<size_t> js2(ps1_length, n-1); // remember it's 0-based!
+    std::vector<size_t> js2( ps2_length, n - 1 ); // remember it's 0-based!
     js.insert( js.end(), js2.begin(), js2.end() );
+    // also update the rows object
+    // always add new row, initialize as blank
+    rows.push_back( std::vector<size_t>(0) );
+    for ( p2 = 0, p = is_length; p2 < ps2_length; p2++, p++ ) {
+      i = is2[ p2 ];
+      // always exclude diagonal
+      if ( i == js2[ p2 ] ) continue;
+      // the value to add is p in the final vector
+      rows[ i ].push_back( p );
+    }
 
     // grow lengths as we go
-    // ps_length++;
-    // is_length += is2.size();
-    // calculate new lengths
-    is_length = is.size();
-    ps_length = ps.size();
+    is_length += ps2_length;
+    ps_length++;
   }
   
   // when done, create a new object, otherwise the original gets edited by reference which is bad practice!

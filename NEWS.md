@@ -184,3 +184,7 @@ First set of updates for simulating with recombination!
 # simfam 1.1.14.9000 (2025-01-03)
 
 - Functions `kinship_fam` and `sim_pedigree` added option `sparse` to handle sparse kinship matrices, which reduce memory usage when applicable but are currently slower algorithms otherwise.
+
+# simfam 1.1.15.9000 (2025-01-07)
+
+- Function `kinship_fam` runtime optimized: internal C++ code has new structure for extracting rows considerably faster (at the expense of somewhat more memory).
